@@ -1,0 +1,50 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-ensure-customers-have-a-clearly-visible-report-an-issue-action-for-each-of-their-bookings-and-that-submitting-an-issue-creates-an-admin-notification-categorized-as-issues-with-a-distinct-issue-specific-color-treatment-in-the-admin-notifications-panel",
+      "featureTitle": "Ensure customers have a clearly visible \"Report an Issue\" action for each of their bookings, and that submitting an issue creates an admin notification categorized as \"issues\" with a distinct (issue-specific) color treatment in the admin Notifications panel.",
+      "files": [
+        "frontend/src/components/admin/NotificationPanel.tsx",
+        "frontend/src/pages/MyBookingsPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-admin-booking-management-view-to-clearly-include-previous-past-bookings-and-visually-distinguish-expired-bookings-using-a-different-color-treatment-from-active-bookings",
+      "featureTitle": "Update the admin Booking Management view to clearly include previous (past) bookings and visually distinguish expired bookings using a different color treatment from active bookings.",
+      "files": [
+        "frontend/src/components/admin/BookingManagement.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

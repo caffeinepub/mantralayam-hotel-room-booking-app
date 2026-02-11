@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-ensure-customers-have-a-clearly-visible-report-an-issue-action-for-each-of-their-bookings-and-that-submitting-an-issue-creates-an-admin-notification-categorized-as-issues-with-a-distinct-issue-specific-color-treatment-in-the-admin-notifications-panel",
+      "title": "Ensure customers have a clearly visible \"Report an Issue\" action for each of their bookings, and that submitting an issue creates an admin notification categorized as \"issues\" with a distinct (issue-specific) color treatment in the admin Notifications panel.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-admin-booking-management-view-to-clearly-include-previous-past-bookings-and-visually-distinguish-expired-bookings-using-a-different-color-treatment-from-active-bookings",
+      "title": "Update the admin Booking Management view to clearly include previous (past) bookings and visually distinguish expired bookings using a different color treatment from active bookings.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Add a customer-facing “Report an issue” button and show submitted issues in the admin notifications with a distinct color",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Allow admin to view previous/expired bookings and display expired bookings in a distinct color",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Customer issue reporting notifications + admin past/expired bookings highlighting",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 1rem;
+        /* Professional Saffron-Gold Hindu-Inspired Theme - Light Mode */
+        --background: 0.98 0.02 60;
+        --foreground: 0.25 0.05 20;
+        --card: 0.97 0.03 55 / 0.85;
+        --card-foreground: 0.25 0.05 20;
+        --popover: 0.98 0.02 60 / 0.95;
+        --popover-foreground: 0.25 0.05 20;
+        --primary: 0.65 0.18 50;
+        --primary-foreground: 0.98 0.01 60;
+        --secondary: 0.92 0.05 55;
+        --secondary-foreground: 0.30 0.05 20;
+        --muted: 0.94 0.03 55;
+        --muted-foreground: 0.50 0.04 30;
+        --accent: 0.70 0.20 45;
+        --accent-foreground: 0.15 0.05 20;
+        --destructive: 0.577 0.245 27.325;
+        --destructive-foreground: 0.99 0 0;
+        --border: 0.85 0.08 50 / 0.3;
+        --input: 0.92 0.05 55 / 0.5;
+        --ring: 0.65 0.18 50;
+        --chart-1: 0.70 0.20 45;
+        --chart-2: 0.65 0.18 50;
+        --chart-3: 0.60 0.15 55;
+        --chart-4: 0.75 0.22 40;
+        --chart-5: 0.68 0.19 48;
+        --sidebar: 0.97 0.03 55 / 0.85;
+        --sidebar-foreground: 0.25 0.05 20;
+        --sidebar-primary: 0.65 0.18 50;
+        --sidebar-primary-foreground: 0.98 0.01 60;
+        --sidebar-accent: 0.92 0.05 55;
+        --sidebar-accent-foreground: 0.30 0.05 20;
+        --sidebar-border: 0.85 0.08 50 / 0.3;
+        --sidebar-ring: 0.65 0.18 50;
+        
+        /* Saffron-Gold specific */
+        --glass-bg: 0.97 0.03 55 / 0.7;
+        --glass-border: 0.85 0.08 50 / 0.25;
+        --gradient-saffron: 0.65 0.18 50;
+        --gradient-gold: 0.70 0.20 45;
+        --warm-cream: 0.98 0.02 60;
+        --deep-maroon: 0.30 0.15 20;
+    }
+
+    .dark {
+        /* Professional Saffron-Gold Hindu-Inspired Theme - Dark Mode */
+        --background: 0.20 0.04 30;
+        --foreground: 0.95 0.02 55;
+        --card: 0.25 0.05 35 / 0.85;
+        --card-foreground: 0.95 0.02 55;
+        --popover: 0.28 0.05 35 / 0.95;
+        --popover-foreground: 0.95 0.02 55;
+        --primary: 0.70 0.20 45;
+        --primary-foreground: 0.15 0.04 30;
+        --secondary: 0.32 0.05 35;
+        --secondary-foreground: 0.95 0.02 55;
+        --muted: 0.30 0.04 35;
+        --muted-foreground: 0.65 0.03 45;
+        --accent: 0.75 0.22 40;
+        --accent-foreground: 0.15 0.04 30;
+        --destructive: 0.65 0.22 27;
+        --destructive-foreground: 0.99 0 0;
+        --border: 0.40 0.08 40 / 0.3;
+        --input: 0.32 0.05 35 / 0.5;
+        --ring: 0.70 0.20 45;
+        --chart-1: 0.75 0.22 40;
+        --chart-2: 0.70 0.20 45;
+        --chart-3: 0.65 0.18 50;
+        --chart-4: 0.78 0.24 38;
+        --chart-5: 0.72 0.21 43;
+        --sidebar: 0.25 0.05 35 / 0.85;
+        --sidebar-foreground: 0.95 0.02 55;
+        --sidebar-primary: 0.70 0.20 45;
+        --sidebar-primary-foreground: 0.15 0.04 30;
+        --sidebar-accent: 0.32 0.05 35;
+        --sidebar-accent-foreground: 0.95 0.02 55;
+        --sidebar-border: 0.40 0.08 40 / 0.3;
+        --sidebar-ring: 0.70 0.20 45;
+        
+        /* Saffron-Gold specific */
+        --glass-bg: 0.25 0.05 35 / 0.7;
+        --glass-border: 0.40 0.08 40 / 0.25;
+        --gradient-saffron: 0.70 0.20 45;
+        --gradient-gold: 0.75 0.22 40;
+        --warm-cream: 0.95 0.02 55;
+        --deep-maroon: 0.30 0.15 20;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    }
+}
+
+@layer utilities {
+    /* Glassmorphic card effect with saffron theme */
+    .glass-card {
+        background: oklch(var(--glass-bg));
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid oklch(var(--glass-border));
+        box-shadow: 0 8px 32px 0 rgba(184, 134, 11, 0.1);
+    }
+    
+    /* Saffron-Gold gradient backgrounds */
+    .gradient-saffron-gold {
+        background: linear-gradient(135deg, oklch(var(--gradient-saffron)) 0%, oklch(var(--gradient-gold)) 100%);
+    }
+    
+    .gradient-saffron-gold-radial {
+        background: radial-gradient(circle at top right, oklch(var(--gradient-saffron) / 0.15) 0%, oklch(var(--gradient-gold) / 0.08) 50%, transparent 100%);
+    }
+    
+    /* Legacy gradient class for backward compatibility */
+    .gradient-purple-gold {
+        background: linear-gradient(135deg, oklch(var(--gradient-saffron)) 0%, oklch(var(--gradient-gold)) 100%);
+    }
+    
+    .gradient-purple-gold-radial {
+        background: radial-gradient(circle at top right, oklch(var(--gradient-saffron) / 0.15) 0%, oklch(var(--gradient-gold) / 0.08) 50%, transparent 100%);
+    }
+    
+    /* Smooth transitions */
+    .transition-smooth {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Page transition animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    
+    .animate-fade-out {
+        animation: fadeOut 0.3s ease-in forwards;
+    }
+    
+    /* Counter animation */
+    @keyframes countUp {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .animate-count-up {
+        animation: countUp 0.5s ease-out forwards;
+    }
+    
+    /* Hover lift effect with saffron shadow */
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px 0 rgba(184, 134, 11, 0.2);
+    }
+    
+    /* Blur effect for verification */
+    .blur-content {
+        filter: blur(8px);
+        pointer-events: none;
+        user-select: none;
+    }
+}
+

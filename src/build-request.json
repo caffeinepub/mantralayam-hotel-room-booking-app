@@ -1,0 +1,71 @@
+{
+  "kind": "build_request",
+  "title": "Customer issue reporting notifications + admin past/expired bookings highlighting",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Ensure customers have a clearly visible \"Report an Issue\" action for each of their bookings, and that submitting an issue creates an admin notification categorized as \"issues\" with a distinct (issue-specific) color treatment in the admin Notifications panel.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "add report an issue button for customers and let it display in notifications in admin in different colour"
+        ]
+      },
+      "acceptanceCriteria": [
+        "On the customer \"My Bookings\" page, each booking card provides a \"Report Issue\" action that opens the existing ReportIssueDialog.",
+        "Submitting the issue successfully shows the customer success message and persists the issue via existing issueStorage.",
+        "Submitting an issue adds a permanent admin notification with category \"issues\" (via existing addPermanentNotification usage).",
+        "In the admin NotificationPanel, issue notifications are grouped under the \"issues\" category and are visually distinct from other categories (e.g., red icon/badge/left accent bar as implemented for 'issues').",
+        "At least one issue notification created from the customer flow appears in the admin NotificationPanel without requiring a page reload (i.e., updates via the existing storage/event listeners)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Update the admin Booking Management view to clearly include previous (past) bookings and visually distinguish expired bookings using a different color treatment from active bookings.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "and also let admin see prev bookings too expired bookings should be in different colour"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Admin Booking Management shows both upcoming/active bookings and past bookings (no past bookings are hidden/omitted).",
+        "A booking is considered \"expired\" when its checkOutDate is earlier than the current time (client time).",
+        "Expired bookings are visually differentiated (e.g., muted/grey card styling and/or an \"Expired\" badge with a distinct color) while keeping existing status badges (confirmed/pending/cancelled) intact.",
+        "Expired styling is applied consistently to every expired booking in the list.",
+        "The bookings summary/counts remain correct and continue to reflect underlying booking.status values as before."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify files under frontend/src/components/ui (Shadcn components); compose them instead.",
+    "Do not edit frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx (immutable paths).",
+    "Backend must remain single-actor; only introduce backend changes if strictly necessary (this request can be satisfied with the existing localStorage-based issue/notification flows)."
+  ],
+  "nonGoals": [
+    "Implementing real-time push notifications or WebSocket updates.",
+    "Adding third-party customer support/ticketing integrations.",
+    "Changing the booking schema in a way that requires state migration."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}
