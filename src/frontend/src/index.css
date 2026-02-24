@@ -166,6 +166,58 @@
         animation: fadeOut 0.3s ease-in forwards;
     }
     
+    /* Route transition animations with prefers-reduced-motion support */
+    .route-transition {
+        width: 100%;
+    }
+    
+    .route-transition-fade-in {
+        animation: routeFadeIn 0.4s ease-out forwards;
+    }
+    
+    .route-transition-fade-out {
+        animation: routeFadeOut 0.3s ease-in forwards;
+    }
+    
+    @keyframes routeFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    @keyframes routeFadeOut {
+        from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.98);
+        }
+    }
+    
+    /* Respect user's motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+        .route-transition-fade-in,
+        .route-transition-fade-out,
+        .animate-fade-in,
+        .animate-fade-out,
+        .transition-smooth,
+        .hover-lift {
+            animation: none !important;
+            transition: opacity 0.1s ease !important;
+        }
+        
+        .hover-lift:hover {
+            transform: none !important;
+        }
+    }
+    
     /* Counter animation */
     @keyframes countUp {
         from {
@@ -199,4 +251,3 @@
         user-select: none;
     }
 }
-

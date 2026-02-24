@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, MapPin, Star, Bed, Users } from 'lucide-react';
-import { getHomeStays, getHotels, type HomeStay, type Hotel, getHomeStayDisplayPrice, getCustomerSession, setCustomerSession, updateAnalytics, addNotification, getHomeStayBookingStats } from '../lib/dataStorage';
+import { Search, MapPin, Star, Bed } from 'lucide-react';
+import { getHomeStays, getHotels, type HomeStay, type Hotel, getHomeStayDisplayPrice, getCustomerSession, setCustomerSession, updateAnalytics, getHomeStayBookingStats } from '../lib/dataStorage';
+import { upsertCustomer } from '../lib/customerStorage';
 import CustomerInfoModal from '../components/CustomerInfoModal';
 
 export default function BrowseRoomsPage() {
@@ -54,7 +55,12 @@ export default function BrowseRoomsPage() {
   };
 
   const handleCustomerInfoSubmit = (name: string, phone: string) => {
+    // Save to session
     setCustomerSession(name, phone);
+    
+    // Save to permanent customer storage (idempotent)
+    upsertCustomer(name, phone);
+    
     setShowCustomerModal(false);
     
     if (selectedRoomId) {

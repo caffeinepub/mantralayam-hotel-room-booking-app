@@ -1,58 +1,52 @@
 {
   "kind": "build_request",
-  "title": "Customer issue reporting notifications + admin past/expired bookings highlighting",
+  "title": "Add smooth UI transitions and move Report an Issue button to bottom of Home page",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Ensure customers have a clearly visible \"Report an Issue\" action for each of their bookings, and that submitting an issue creates an admin notification categorized as \"issues\" with a distinct (issue-specific) color treatment in the admin Notifications panel.",
+      "text": "Add smooth, consistent graphic transitions for route/page changes across the app so navigating between pages feels animated (e.g., fade/slide in), while respecting accessibility (disable/limit animations when the user has prefers-reduced-motion enabled).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "add report an issue button for customers and let it display in notifications in admin in different colour"
+          "give smooth graphics transitions"
         ]
       },
       "acceptanceCriteria": [
-        "On the customer \"My Bookings\" page, each booking card provides a \"Report Issue\" action that opens the existing ReportIssueDialog.",
-        "Submitting the issue successfully shows the customer success message and persists the issue via existing issueStorage.",
-        "Submitting an issue adds a permanent admin notification with category \"issues\" (via existing addPermanentNotification usage).",
-        "In the admin NotificationPanel, issue notifications are grouped under the \"issues\" category and are visually distinct from other categories (e.g., red icon/badge/left accent bar as implemented for 'issues').",
-        "At least one issue notification created from the customer flow appears in the admin NotificationPanel without requiring a page reload (i.e., updates via the existing storage/event listeners)."
+        "Navigating between routes (e.g., Home -> Browse Rooms -> Room Detail) shows a smooth transition animation rather than an abrupt content swap.",
+        "Animations are suppressed or significantly reduced when prefers-reduced-motion is enabled.",
+        "No changes are made to immutable hook files; transitions are implemented in editable layout/routing components and/or global CSS utilities."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the admin Booking Management view to clearly include previous (past) bookings and visually distinguish expired bookings using a different color treatment from active bookings.",
+      "text": "Move the existing “Report an Issue” trigger on the Home page to the bottom of the Home page content (visually near the end of the page, above the global footer), keeping the same dialog behavior and English label text.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "and also let admin see prev bookings too expired bookings should be in different colour"
+          "report an issue button should be in bottom of homepage"
         ]
       },
       "acceptanceCriteria": [
-        "Admin Booking Management shows both upcoming/active bookings and past bookings (no past bookings are hidden/omitted).",
-        "A booking is considered \"expired\" when its checkOutDate is earlier than the current time (client time).",
-        "Expired bookings are visually differentiated (e.g., muted/grey card styling and/or an \"Expired\" badge with a distinct color) while keeping existing status badges (confirmed/pending/cancelled) intact.",
-        "Expired styling is applied consistently to every expired booking in the list.",
-        "The bookings summary/counts remain correct and continue to reflect underlying booking.status values as before."
+        "On the Home page, the “Report an Issue” button is placed at the bottom of the page content (not in the hero section).",
+        "Clicking the button still opens the existing ReportIssueDialog and submitting still works as before.",
+        "The button remains visible and properly styled in both light and dark themes without overlapping the site-wide footer."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/components/ui (Shadcn components); compose them instead.",
-    "Do not edit frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx (immutable paths).",
-    "Backend must remain single-actor; only introduce backend changes if strictly necessary (this request can be satisfied with the existing localStorage-based issue/notification flows)."
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts or other frontend immutablePaths listed in SYSTEM_CONTEXT.",
+    "Backend architecture remains single-actor; no backend changes are required for this request."
   ],
   "nonGoals": [
-    "Implementing real-time push notifications or WebSocket updates.",
-    "Adding third-party customer support/ticketing integrations.",
-    "Changing the booking schema in a way that requires state migration."
+    "Do not change issue reporting data fields, storage format, or admin issue/notification behavior.",
+    "Do not redesign the overall theme beyond what is needed to implement smoother transitions and reposition the button."
   ],
   "imageRequirements": {
     "required": [],

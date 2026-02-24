@@ -52,6 +52,7 @@ export default function AdminAppPage() {
       window.addEventListener('notificationsUpdated', handleUpdate);
       window.addEventListener('analyticsUpdated', handleUpdate);
       window.addEventListener('bookingsUpdated', handleUpdate);
+      window.addEventListener('customersUpdated', handleUpdate);
 
       return () => {
         window.removeEventListener('homeStaysUpdated', handleUpdate);
@@ -59,6 +60,7 @@ export default function AdminAppPage() {
         window.removeEventListener('notificationsUpdated', handleUpdate);
         window.removeEventListener('analyticsUpdated', handleUpdate);
         window.removeEventListener('bookingsUpdated', handleUpdate);
+        window.removeEventListener('customersUpdated', handleUpdate);
       };
     }
   }, [isAuthenticated]);
@@ -305,7 +307,9 @@ export default function AdminAppPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-slate-400 font-medium">Total Revenue</p>
-                      <p className="text-4xl font-bold text-slate-100 mt-2 animate-count-up">₹{totalRevenue.toLocaleString()}</p>
+                      <p className="text-4xl font-bold text-slate-100 mt-2 animate-count-up">
+                        ₹{(totalRevenue / 1000).toFixed(1)}k
+                      </p>
                       <p className="text-xs text-slate-500 mt-1">Confirmed bookings</p>
                     </div>
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
@@ -316,182 +320,120 @@ export default function AdminAppPage() {
               </Card>
             </div>
 
-            {/* Quick Stats Section */}
-            <div className="grid gap-6 md:grid-cols-3">
-              <Card className="glass-card bg-slate-900/60 border-slate-800 shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                      <TrendingUp className="h-4 w-4 text-white" />
-                    </div>
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Confirmed Bookings</span>
-                      <Badge className="gradient-saffron-gold text-white border-0 shadow-sm">
-                        {bookings.filter(b => b.status === 'confirmed').length}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Pending Bookings</span>
-                      <Badge variant="secondary" className="shadow-sm">
-                        {bookings.filter(b => b.status === 'pending').length}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Cancelled Bookings</span>
-                      <Badge variant="destructive" className="shadow-sm">
-                        {bookings.filter(b => b.status === 'cancelled').length}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card bg-slate-900/60 border-slate-800 shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                      <Eye className="h-4 w-4 text-white" />
-                    </div>
-                    Visitor Insights
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Total Visitors</span>
-                      <span className="text-lg font-bold text-slate-100">{analytics.visitors}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Customer Logins</span>
-                      <span className="text-lg font-bold text-slate-100">{analytics.customerLogins}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">HomeStay Views</span>
-                      <span className="text-lg font-bold text-slate-100">{analytics.homeStayViews}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card bg-slate-900/60 border-slate-800 shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                      <UserCheck className="h-4 w-4 text-white" />
-                    </div>
-                    Partner Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Partner HomeStays</span>
-                      <span className="text-lg font-bold text-slate-100">
-                        {homeStays.filter(h => h.ownerType === 'partner').length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Partner Edits</span>
-                      <span className="text-lg font-bold text-slate-100">{analytics.partnerEdits}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-300">Active Partners</span>
-                      <span className="text-lg font-bold text-slate-100">
-                        {new Set(homeStays.filter(h => h.partnerId).map(h => h.partnerId)).size}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Quick Actions */}
+            <Card className="glass-card border-slate-800 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-slate-100">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Button
+                    onClick={() => setActiveTab('hotels-homestays')}
+                    variant="outline"
+                    className="h-auto py-4 flex-col gap-2 border-slate-700 text-slate-300 hover:bg-slate-800"
+                  >
+                    <Layers className="h-6 w-6" />
+                    <span>Manage Properties</span>
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('bookings')}
+                    variant="outline"
+                    className="h-auto py-4 flex-col gap-2 border-slate-700 text-slate-300 hover:bg-slate-800"
+                  >
+                    <Calendar className="h-6 w-6" />
+                    <span>View Bookings & Customers</span>
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('notifications')}
+                    variant="outline"
+                    className="h-auto py-4 flex-col gap-2 border-slate-700 text-slate-300 hover:bg-slate-800"
+                  >
+                    <Bell className="h-6 w-6" />
+                    <span>View Notifications</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6 animate-fade-in">
-            <Card className="glass-card bg-slate-900/60 border-slate-800 shadow-saffron-lg">
-              <CardHeader className="border-b border-slate-800 bg-gradient-to-r from-primary/10 to-accent/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl gradient-saffron-gold flex items-center justify-center shadow-saffron">
-                    <Activity className="h-5 w-5 text-white" />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="glass-card bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-400 font-medium">Total Visitors</p>
+                      <p className="text-3xl font-bold text-slate-100 mt-2">{analytics.visitors}</p>
+                    </div>
+                    <Eye className="h-8 w-8 text-blue-400" />
                   </div>
-                  <div>
-                    <CardTitle className="text-2xl text-slate-100">Analytics Dashboard</CardTitle>
-                    <p className="text-sm text-slate-400">Comprehensive metrics and insights</p>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-400 font-medium">Total Bookings</p>
+                      <p className="text-3xl font-bold text-slate-100 mt-2">{analytics.bookings}</p>
+                    </div>
+                    <Calendar className="h-8 w-8 text-green-400" />
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20 shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-400 font-medium">Revenue</p>
+                      <p className="text-3xl font-bold text-slate-100 mt-2">₹{(analytics.revenue / 1000).toFixed(1)}k</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-amber-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-400 font-medium">Customer Logins</p>
+                      <p className="text-3xl font-bold text-slate-100 mt-2">{analytics.customerLogins}</p>
+                    </div>
+                    <UserCheck className="h-8 w-8 text-purple-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="glass-card border-slate-800 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-slate-100">Activity Overview</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 hover-lift">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                        <Eye className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400 font-medium">Total Visitors</p>
-                        <p className="text-3xl font-bold text-slate-100">{analytics.visitors}</p>
-                      </div>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50">
+                    <div className="flex items-center gap-3">
+                      <Activity className="h-5 w-5 text-primary" />
+                      <span className="text-slate-300">Partner Edits</span>
                     </div>
+                    <span className="text-2xl font-bold text-slate-100">{analytics.partnerEdits}</span>
                   </div>
-
-                  <div className="p-6 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 hover-lift">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
-                        <Calendar className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400 font-medium">Total Bookings</p>
-                        <p className="text-3xl font-bold text-slate-100">{analytics.bookings}</p>
-                      </div>
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50">
+                    <div className="flex items-center gap-3">
+                      <Eye className="h-5 w-5 text-primary" />
+                      <span className="text-slate-300">HomeStay Views</span>
                     </div>
+                    <span className="text-2xl font-bold text-slate-100">{analytics.homeStayViews}</span>
                   </div>
-
-                  <div className="p-6 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 hover-lift">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
-                        <DollarSign className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400 font-medium">Total Payments</p>
-                        <p className="text-3xl font-bold text-slate-100">{analytics.payments}</p>
-                      </div>
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50">
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      <span className="text-slate-300">Payments Processed</span>
                     </div>
-                  </div>
-
-                  <div className="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 hover-lift">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
-                        <UserCheck className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400 font-medium">Customer Logins</p>
-                        <p className="text-3xl font-bold text-slate-100">{analytics.customerLogins}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 p-6 rounded-xl bg-slate-800/50 border border-slate-700 shadow-lg">
-                  <h3 className="text-lg font-semibold text-slate-100 mb-6 flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    Performance Metrics
-                  </h3>
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                      <p className="text-sm text-slate-400 mb-2 font-medium">HomeStay Views</p>
-                      <p className="text-4xl font-bold text-slate-100">{analytics.homeStayViews}</p>
-                      <p className="text-xs text-slate-500 mt-1">Total homestay page visits</p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                      <p className="text-sm text-slate-400 mb-2 font-medium">Partner Edits</p>
-                      <p className="text-4xl font-bold text-slate-100">{analytics.partnerEdits}</p>
-                      <p className="text-xs text-slate-500 mt-1">HomeStay updates by partners</p>
-                    </div>
+                    <span className="text-2xl font-bold text-slate-100">{analytics.payments}</span>
                   </div>
                 </div>
               </CardContent>
@@ -501,111 +443,47 @@ export default function AdminAppPage() {
           {/* Hotels & HomeStays Tab */}
           <TabsContent value="hotels-homestays" className="space-y-6 animate-fade-in">
             <Tabs defaultValue="hotels" className="space-y-6">
-              <div className="glass-card bg-slate-900/60 border-slate-800 p-1.5 rounded-xl">
-                <TabsList className="bg-transparent gap-2">
-                  <TabsTrigger 
-                    value="hotels"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white data-[state=active]:shadow-saffron rounded-lg transition-all duration-300"
-                  >
-                    <Hotel className="h-4 w-4 mr-2" />
-                    Hotels Management
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="homestays"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white data-[state=active]:shadow-saffron rounded-lg transition-all duration-300"
-                  >
-                    <HomeIcon className="h-4 w-4 mr-2" />
-                    HomeStays Management
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
+              <TabsList className="glass-card bg-slate-900/60 border-slate-800">
+                <TabsTrigger value="hotels">Hotels</TabsTrigger>
+                <TabsTrigger value="homestays">HomeStays</TabsTrigger>
+              </TabsList>
               <TabsContent value="hotels">
                 <HotelManagement />
               </TabsContent>
-
               <TabsContent value="homestays">
                 <HomeStayManagement />
               </TabsContent>
             </Tabs>
           </TabsContent>
 
-          {/* Bookings Tab */}
-          <TabsContent value="bookings" className="animate-fade-in">
+          {/* Bookings Tab - Now includes integrated customer management */}
+          <TabsContent value="bookings" className="space-y-6 animate-fade-in">
             <BookingManagement />
           </TabsContent>
 
           {/* Temple Specials Tab */}
-          <TabsContent value="temple-specials" className="animate-fade-in">
+          <TabsContent value="temple-specials" className="space-y-6 animate-fade-in">
             <TempleSpecialsManagement />
           </TabsContent>
 
           {/* Notifications Tab */}
-          <TabsContent value="notifications" className="animate-fade-in">
+          <TabsContent value="notifications" className="space-y-6 animate-fade-in">
             <NotificationPanel />
           </TabsContent>
 
           {/* Partners Tab */}
-          <TabsContent value="partners" className="animate-fade-in">
+          <TabsContent value="partners" className="space-y-6 animate-fade-in">
             <PasscodeManagement />
           </TabsContent>
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6 animate-fade-in">
-            <Card className="glass-card bg-slate-900/60 border-slate-800 shadow-saffron-lg">
-              <CardHeader className="border-b border-slate-800 bg-gradient-to-r from-primary/10 to-accent/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl gradient-saffron-gold flex items-center justify-center shadow-saffron">
-                    <Settings className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl text-slate-100">System Settings</CardTitle>
-                    <p className="text-sm text-slate-400">Configure administrative settings</p>
-                  </div>
-                </div>
+            <Card className="glass-card border-slate-800 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-slate-100">Admin Settings</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700 shadow-lg">
-                  <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
-                    <Key className="h-5 w-5 text-primary" />
-                    Admin Password Management
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-slate-300 font-medium">Password Status</Label>
-                      <div className="mt-2 p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                        <p className="text-sm text-slate-300">Admin password is configured and secure</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-slate-500 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      Password management is active and secure
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700 shadow-lg">
-                  <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-primary" />
-                    System Information
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-400">Version</span>
-                      <span className="text-sm text-slate-100 font-medium">4.0.0</span>
-                    </div>
-                    <div className="flex justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-400">Last Login</span>
-                      <span className="text-sm text-slate-100 font-medium">{new Date().toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                      <span className="text-sm text-slate-400">Storage Used</span>
-                      <span className="text-sm text-slate-100 font-medium">
-                        {((JSON.stringify(localStorage).length / 1024 / 1024).toFixed(2))} MB
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <CardContent>
+                <p className="text-slate-400">Settings panel coming soon...</p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -614,4 +492,3 @@ export default function AdminAppPage() {
     </div>
   );
 }
-

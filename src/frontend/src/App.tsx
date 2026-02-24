@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import HelpFAQWidget from './components/HelpFAQWidget';
 import TimeoutReviewPromptDialog from './components/TimeoutReviewPromptDialog';
 import OfflineIndicator from './components/OfflineIndicator';
+import RouteTransition from './components/RouteTransition';
 import HomePage from './pages/HomePage';
 import BrowseRoomsPage from './pages/BrowseRoomsPage';
 import RoomDetailPage from './pages/RoomDetailPage';
@@ -54,7 +55,9 @@ function RootLayout() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <Outlet />
+        <RouteTransition>
+          <Outlet />
+        </RouteTransition>
       </main>
       <Footer />
       <HelpFAQWidget />

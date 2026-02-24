@@ -13,6 +13,7 @@ import {
   getAvailableRoomsCount, getTotalCapacityForRooms
 } from '../lib/dataStorage';
 import { addPermanentNotification } from '../lib/notificationStorage';
+import { upsertCustomer } from '../lib/customerStorage';
 
 export default function BookingPage() {
   const navigate = useNavigate();
@@ -155,6 +156,9 @@ export default function BookingPage() {
       bookings.push(newBooking);
       saveBookings(bookings);
 
+      // Save customer to permanent storage (idempotent)
+      upsertCustomer(customerName, customerPhone);
+
       addNotification(`New booking: ${homeStay.name} by ${customerName} (${customerPhone}) - ${roomQuantity} room(s), 12-hour stay`, 'booking');
       addPermanentNotification(
         `New booking: ${homeStay.name} by ${customerName} (${customerPhone}) - ${roomQuantity} room(s), 12-hour stay`,
@@ -262,65 +266,75 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span className="font-medium">12-hour stay duration</span>
-                  </div>
-                  {checkOutDateTime && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Check-out: {new Date(checkOutDateTime).toLocaleString('en-IN', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="roomQuantity">Number of Rooms</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="roomQuantity">Number of Rooms</Label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setRoomQuantity(Math.max(1, roomQuantity - 1))}
+                      disabled={roomQuantity <= 1}
+                      className="glass-card"
+                    >
+                      -
+                    </Button>
                     <Input
                       id="roomQuantity"
                       type="number"
-                      min="1"
-                      max={availableRooms}
                       value={roomQuantity}
                       onChange={(e) => setRoomQuantity(Math.max(1, Math.min(availableRooms, parseInt(e.target.value) || 1)))}
-                      className="glass-card"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {availableRooms} room(s) available
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="guests">Number of Guests</Label>
-                    <Input
-                      id="guests"
-                      type="number"
                       min="1"
-                      max={maxGuests}
-                      value={guests}
-                      onChange={(e) => setGuests(e.target.value)}
-                      className="glass-card"
+                      max={availableRooms}
+                      className="glass-card text-center"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Max {maxGuests} guests for {roomQuantity} room(s)
-                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setRoomQuantity(Math.min(availableRooms, roomQuantity + 1))}
+                      disabled={roomQuantity >= availableRooms}
+                      className="glass-card"
+                    >
+                      +
+                    </Button>
+                    <Badge variant="secondary" className="ml-2">
+                      {availableRooms} available
+                    </Badge>
                   </div>
                 </div>
 
-                {parseInt(guests) > maxGuests && (
-                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-medium text-destructive">Guest limit exceeded</p>
-                        <p className="text-muted-foreground mt-1">
-                          Maximum {maxGuests} guests allowed for {roomQuantity} room(s). Please book another room or reduce guest count.
-                        </p>
-                      </div>
+                <div className="space-y-2">
+                  <Label htmlFor="guests">Number of Guests</Label>
+                  <Input
+                    id="guests"
+                    type="number"
+                    value={guests}
+                    onChange={(e) => setGuests(e.target.value)}
+                    min="1"
+                    max={maxGuests}
+                    className="glass-card"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Maximum {maxGuests} guests for {roomQuantity} room(s)
+                  </p>
+                </div>
+
+                {checkOutDateTime && (
+                  <div className="p-4 glass-card bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Check-out:</span>
+                      <span className="text-muted-foreground">
+                        {new Date(checkOutDateTime).toLocaleString('en-IN', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      12-hour stay from check-in time
+                    </p>
                   </div>
                 )}
               </CardContent>
@@ -331,59 +345,68 @@ export default function BookingPage() {
           <div className="lg:col-span-1">
             <Card className="glass-card shadow-saffron sticky top-24">
               <CardHeader>
-                <CardTitle>Booking Summary</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  Booking Summary
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-lg">{homeStay.name}</h3>
+                  <h3 className="font-semibold text-lg mb-1">{homeStay.name}</h3>
                   <p className="text-sm text-muted-foreground">{hotel.name}</p>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+                <div className="space-y-2 py-4 border-y">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Room(s)</span>
                     <span className="font-medium">{roomQuantity}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Guests</span>
                     <span className="font-medium">{guests}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Duration</span>
                     <span className="font-medium">12 hours</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Price per room</span>
-                    <span className="font-medium">₹{homeStay.fixedPrice || homeStay.minPrice}</span>
+                    <span className="font-medium">
+                      ₹{homeStay.fixedPrice || homeStay.minPrice}
+                    </span>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">Total Amount</span>
-                    <span className="text-2xl font-bold text-primary">₹{totalPrice}</span>
-                  </div>
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-lg font-semibold">Total</span>
+                  <span className="text-2xl font-bold text-primary">
+                    ₹{totalPrice.toLocaleString('en-IN')}
+                  </span>
                 </div>
 
                 <Button
                   onClick={handleBooking}
-                  disabled={isProcessing || !checkInDate || !checkInTime || parseInt(guests) > maxGuests || availableRooms < roomQuantity}
-                  className="w-full gradient-saffron-gold text-white border-0 hover:opacity-90 gap-2"
-                  size="lg"
+                  disabled={isProcessing || availableRooms < roomQuantity}
+                  className="w-full gradient-saffron-gold text-white border-0 hover:opacity-90 h-12 text-base font-semibold"
                 >
                   {isProcessing ? (
                     'Processing...'
                   ) : (
                     <>
                       Proceed to Payment
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="ml-2 h-5 w-5" />
                     </>
                   )}
                 </Button>
 
-                <p className="text-xs text-center text-muted-foreground">
-                  By proceeding, you agree to our terms and conditions
-                </p>
+                {availableRooms < roomQuantity && (
+                  <div className="flex items-start gap-2 p-3 glass-card bg-destructive/10 rounded-lg">
+                    <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-destructive">
+                      Not enough rooms available. Please adjust your selection.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

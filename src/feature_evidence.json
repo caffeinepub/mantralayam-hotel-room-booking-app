@@ -2,11 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-customers-have-a-clearly-visible-report-an-issue-action-for-each-of-their-bookings-and-that-submitting-an-issue-creates-an-admin-notification-categorized-as-issues-with-a-distinct-issue-specific-color-treatment-in-the-admin-notifications-panel",
-      "featureTitle": "Ensure customers have a clearly visible \"Report an Issue\" action for each of their bookings, and that submitting an issue creates an admin notification categorized as \"issues\" with a distinct (issue-specific) color treatment in the admin Notifications panel.",
+      "featureId": "feature-add-smooth-consistent-graphic-transitions-for-route-page-changes-across-the-app-so-navigating-between-pages-feels-animated-e-g-fade-slide-in-while-respecting-accessibility-disable-limit-animations-when-the-user-has-prefers-reduced-motion-enabled",
+      "featureTitle": "Add smooth, consistent graphic transitions for route/page changes across the app so navigating between pages feels animated (e.g., fade/slide in), while respecting accessibility (disable/limit animations when the user has prefers-reduced-motion enabled).",
       "files": [
-        "frontend/src/components/admin/NotificationPanel.tsx",
-        "frontend/src/pages/MyBookingsPage.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/RouteTransition.tsx",
+        "frontend/src/index.css"
       ],
       "components": [
         "authorization@3.0.0",
@@ -25,10 +26,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-admin-booking-management-view-to-clearly-include-previous-past-bookings-and-visually-distinguish-expired-bookings-using-a-different-color-treatment-from-active-bookings",
-      "featureTitle": "Update the admin Booking Management view to clearly include previous (past) bookings and visually distinguish expired bookings using a different color treatment from active bookings.",
+      "featureId": "feature-move-the-existing-report-an-issue-trigger-on-the-home-page-to-the-bottom-of-the-home-page-content-visually-near-the-end-of-the-page-above-the-global-footer-keeping-the-same-dialog-behavior-and-english-label-text",
+      "featureTitle": "Move the existing “Report an Issue” trigger on the Home page to the bottom of the Home page content (visually near the end of the page, above the global footer), keeping the same dialog behavior and English label text.",
       "files": [
-        "frontend/src/components/admin/BookingManagement.tsx"
+        "frontend/src/index.css",
+        "frontend/src/pages/HomePage.tsx"
       ],
       "components": [
         "authorization@3.0.0",

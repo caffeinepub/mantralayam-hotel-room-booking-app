@@ -1,46 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Customer issue reporting notifications + admin past/expired bookings highlighting",
+  "title": "Smooth route transitions + move Home page Report an Issue trigger to bottom",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Make the customer booking issue reporting action clearly visible and ensure admin receives and visually distinguishes issue notifications in the admin Notifications panel via existing localStorage-based notification flows.",
+      "summary": "Implement smooth, consistent animated transitions on route/page changes across the app, with prefers-reduced-motion support, without touching immutable hook files.",
       "acceptanceCriteria": [
-        "On the customer \"My Bookings\" page, each booking card provides a \"Report Issue\" action that opens the existing ReportIssueDialog.",
-        "Submitting the issue successfully shows the customer success message and persists the issue via existing issueStorage.",
-        "Submitting an issue adds a permanent admin notification with category \"issues\" (via existing addPermanentNotification usage).",
-        "In the admin NotificationPanel, issue notifications are grouped under the \"issues\" category and are visually distinct from other categories (e.g., red icon/badge/left accent bar as implemented for 'issues').",
-        "At least one issue notification created from the customer flow appears in the admin NotificationPanel without requiring a page reload (i.e., updates via the existing storage/event listeners)."
+        "Navigating between routes (e.g., Home -> Browse Rooms -> Room Detail) shows a smooth transition animation rather than an abrupt content swap.",
+        "Animations are suppressed or significantly reduced when prefers-reduced-motion is enabled.",
+        "No changes are made to immutable hook files; transitions are implemented in editable layout/routing components and/or global CSS utilities."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/MyBookingsPage.tsx",
-          "operation": "modify",
-          "description": "Ensure each booking card has a clearly visible \"Report an Issue\" action by adjusting the existing ReportIssueDialog trigger button label/styling for prominence while continuing to open the existing ReportIssueDialog. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/components/RouteTransition.tsx",
+          "operation": "create",
+          "description": "Create a small wrapper component that keys routed content by the current location and applies enter/exit CSS classes for page transitions, while honoring prefers-reduced-motion. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/admin/NotificationPanel.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Fix live-update wiring so newly created permanent notifications (including category \"issues\" from the customer flow) appear without reload by listening to the actual events dispatched by notificationStorage (e.g., notificationsUpdated and/or newNotification) and refreshing permanentNotifications accordingly, while keeping issue-specific color/accents and grouping under \"issues\". Verify the component's usage instructions before implementing."
+          "description": "Wire the new RouteTransition wrapper into the root layout so the <Outlet /> content transitions on route changes (apply consistently for all routes) without modifying any immutable hook files. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Add/adjust global route transition utility classes (fade/slide) and include a @media (prefers-reduced-motion: reduce) override to disable or significantly reduce animations for accessibility. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Show past bookings in admin Booking Management and visually distinguish expired bookings (checkOutDate earlier than current client time) without changing existing status counts/badges.",
+      "summary": "Move the existing Home page “Report an Issue” trigger to the bottom of the Home page content (above the global footer) while preserving the same dialog behavior and label text.",
       "acceptanceCriteria": [
-        "Admin Booking Management shows both upcoming/active bookings and past bookings (no past bookings are hidden/omitted).",
-        "A booking is considered \"expired\" when its checkOutDate is earlier than the current time (client time).",
-        "Expired bookings are visually differentiated (e.g., muted/grey card styling and/or an \"Expired\" badge with a distinct color) while keeping existing status badges (confirmed/pending/cancelled) intact.",
-        "Expired styling is applied consistently to every expired booking in the list.",
-        "The bookings summary/counts remain correct and continue to reflect underlying booking.status values as before."
+        "On the Home page, the “Report an Issue” button is placed at the bottom of the page content (not in the hero section).",
+        "Clicking the button still opens the existing ReportIssueDialog and submitting still works as before.",
+        "The button remains visible and properly styled in both light and dark themes without overlapping the site-wide footer."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/admin/BookingManagement.tsx",
+          "path": "frontend/src/pages/HomePage.tsx",
           "operation": "modify",
-          "description": "Add an \"expired\" UI treatment based on client-time comparison (checkOutDate < Date.now()) by applying muted/grey styling to expired booking cards and rendering an additional \"Expired\" badge while preserving existing status badges and leaving the existing summary counts based on booking.status unchanged. Verify the component's usage instructions before implementing."
+          "description": "Remove the current ReportIssueDialog trigger from the hero section and re-add the same trigger/button near the end of the Home page content (visually above the global footer), keeping the exact English label “Report an Issue” and the existing dialog behavior unchanged. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "If needed, add a small utility/style adjustment to ensure the bottom-placed trigger has adequate spacing above the footer and remains readable in both light and dark themes, without redesigning the overall theme. Verify the component's usage instructions before implementing."
         }
       ]
     }

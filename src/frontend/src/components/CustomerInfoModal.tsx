@@ -45,7 +45,7 @@ export default function CustomerInfoModal({ isOpen, onClose, onSubmit }: Custome
           </div>
           <DialogTitle className="text-2xl text-center">Enter Your Details</DialogTitle>
           <DialogDescription className="text-center">
-            Please provide your name and phone number to continue
+            Please provide your name and phone number to continue with your booking
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
@@ -87,11 +87,6 @@ export default function CustomerInfoModal({ isOpen, onClose, onSubmit }: Custome
             >
               {isSubmitting ? 'Processing...' : 'Continue'}
             </Button>
-          </div>
-          <div className="pt-2 border-t">
-            <p className="text-xs text-center text-muted-foreground">
-              Your information will be stored for this session only
-            </p>
           </div>
         </div>
       </DialogContent>
