@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Commercial homestay management app where users can add/manage homestays. Currently facing an authorization error preventing non-admin users from saving homestays.",
+  "architectural_notes": [
+    "Homestay save operation requires authenticated admin role — authorization check is blocking regular users from adding homestays"
+  ],
+  "known_issues": [
+    "'Failed to save homestay: Unauthorized: Only authenticated admins can add homestays' error is shown when trying to save a homestay — authorization logic is too restrictive"
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-update-the-homestaymanagement-frontend-component-to-remove-any-client-side-admin-only-guard-or-error-handling-that-blocks-non-admin-authenticated-users-from-submitting-the-add-homestay-form-ensuring-the-form-submission-reaches-the-backend-for-all-authenticated-users",
+      "title": "Update the HomeStayManagement frontend component to remove any client-side admin-only guard or error handling that blocks non-admin authenticated users from submitting the add-homestay form, ensuring the form submission reaches the backend for all authenticated users.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Remove or relax the admin-only authorization guard on the 'addHomeStay' (or equivalent) backend function so that authenticated users (including partners and non-admin authenticated principals) can successfully create and save homestay listings without receiving an 'Unauthorized: Only authenticated admins can add homestays' error.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Fix unauthorized error when saving homestays",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

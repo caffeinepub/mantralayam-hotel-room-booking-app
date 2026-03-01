@@ -1,0 +1,23 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix unauthorized error when saving homestays - Frontend",
+  "requirements": [
+    {
+      "id": "REQ-2",
+      "summary": "Remove client-side admin-only guard from HomeStayManagement component to allow authenticated users to submit homestay forms",
+      "acceptanceCriteria": [
+        "The 'Add Homestay' form is submittable by any authenticated user without a client-side authorization block.",
+        "On successful save, a success message is shown and the new homestay appears in the listing.",
+        "On failure (e.g. network error), a descriptive error message is shown without referencing 'admin only'."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/HomeStayManagement.tsx",
+          "operation": "modify",
+          "description": "Remove any client-side admin-only authorization checks that prevent authenticated non-admin users from submitting the add-homestay form. Update error handling to display descriptive messages without 'admin only' references. Ensure the form submission calls the backend addHomeStayWithOptionalPasscode method for all authenticated users. Update success messaging to confirm the homestay was saved and refresh the listing."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "kind": "build_request",
+  "title": "Fix unauthorized error when saving homestays",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Remove or relax the admin-only authorization guard on the 'addHomeStay' (or equivalent) backend function so that authenticated users (including partners and non-admin authenticated principals) can successfully create and save homestay listings without receiving an 'Unauthorized: Only authenticated admins can add homestays' error.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Failed to save homestay: Unauthorized: Only authenticated admins can add homestays"
+        ]
+      },
+      "acceptanceCriteria": [
+        "An authenticated non-admin user can call the addHomeStay backend function without receiving an Unauthorized error.",
+        "The backend accepts and persists the homestay data submitted by authenticated users.",
+        "Admin users retain the ability to add homestays as before.",
+        "Unauthenticated (anonymous) callers still receive an appropriate error and cannot add homestays."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Update the HomeStayManagement frontend component to remove any client-side admin-only guard or error handling that blocks non-admin authenticated users from submitting the add-homestay form, ensuring the form submission reaches the backend for all authenticated users.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Failed to save homestay: Unauthorized: Only authenticated admins can add homestays"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The 'Add Homestay' form is submittable by any authenticated user without a client-side authorization block.",
+        "On successful save, a success message is shown and the new homestay appears in the listing.",
+        "On failure (e.g. network error), a descriptive error message is shown without referencing 'admin only'."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not break existing admin capabilities — admins must still be able to add, edit, and delete homestays.",
+    "Do not allow unauthenticated (anonymous) principals to add or modify homestays.",
+    "This is a commercial application — changes must be stable, tested, and production-ready."
+  ],
+  "nonGoals": [
+    "Adding new user roles or a full role-based access control overhaul.",
+    "Changes to booking, hotel, or room management authorization logic.",
+    "UI redesign or feature additions unrelated to the authorization fix."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}
