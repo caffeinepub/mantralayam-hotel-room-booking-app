@@ -1,42 +1,97 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T16:10:34.165Z",
+  "generatedAt": "2026-03-02T17:25:22.322Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Remove or relax the admin-only authorization guard on the 'addHomeStay' (or equivalent) backend function so that authenticated users (including partners and non-admin authenticated principals) can successfully create and save homestay listings without receiving an 'Unauthorized: Only authenticated admins can add homestays' error.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Ensure all room, homestay, hotel, and booking data is stored in and retrieved from the Motoko backend canister (not localStorage) so that data is shared across devices and sessions. All CRUD operations for rooms, homestays, hotels, and bookings must go through backend actor calls.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/BrowseRoomsPage.tsx",
+          "frontend/src/pages/RoomDetailPage.tsx",
+          "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "frontend/src/components/admin/HomeStayManagement.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/BrowseRoomsPage.tsx",
+          "frontend/src/pages/RoomDetailPage.tsx",
+          "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "frontend/src/components/admin/HomeStayManagement.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update the HomeStayManagement frontend component to remove any client-side admin-only guard or error handling that blocks non-admin authenticated users from submitting the add-homestay form, ensuring the form submission reaches the backend for all authenticated users.",
+        "summary": "When an admin updates a room or homestay (name, price, availability, photos, amenities, or any other field) via AdminRoomManagement or HomeStayManagement, all connected frontend views (BrowseRoomsPage, RoomDetailPage, PartnerDashboardPage) must reflect the updated data immediately without requiring a full page reload. Implement React Query cache invalidation on all successful admin mutation operations so queries re-fetch from the backend automatically.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/HomeStayManagement.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "frontend/src/components/admin/HomeStayManagement.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx",
+          "frontend/src/pages/BrowseRoomsPage.tsx",
+          "frontend/src/pages/RoomDetailPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/HomeStayManagement.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "frontend/src/components/admin/HomeStayManagement.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx",
+          "frontend/src/pages/BrowseRoomsPage.tsx",
+          "frontend/src/pages/RoomDetailPage.tsx"
         ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Fix the session-expired / unauthorized errors that appear during or after backend interactions. Ensure the Internet Identity auth state is checked before every backend actor call, and display a clear, user-friendly message prompting the user to log out and log back in if the session is invalid. Do not show raw error strings to the user.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useActor.ts",
+          "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "frontend/src/components/admin/HomeStayManagement.tsx",
+          "frontend/src/pages/BookingPage.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "frontend/src/components/admin/HomeStayManagement.tsx",
+          "frontend/src/pages/PartnerDashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Ensure the Motoko backend actor has stable storage for all core data types (Hotel, HomeStay, Booking, partner sessions, notifications) using stable variables so that data persists across canister upgrades without being lost.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/components/admin/AdminRoomManagement.tsx",
     "frontend/src/components/admin/HomeStayManagement.tsx",
+    "frontend/src/components/admin/HotelManagement.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/BrowseRoomsPage.tsx",
+    "frontend/src/pages/PartnerDashboardPage.tsx",
+    "frontend/src/pages/RoomDetailPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

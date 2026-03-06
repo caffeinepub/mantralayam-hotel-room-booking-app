@@ -1,25 +1,44 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T16:10:34.161Z",
-  "summary": "The diff modifies backend/main.mo and frontend/src/components/admin/HomeStayManagement.tsx. The frontend changes appear to remove admin-only guards and improve error handling. However, the backend file is truncated and the actual authorization guard change (the core of REQ-1) cannot be confirmed from the visible diff. The project_state.json still shows both AR-1 and AR-2 as 'pending'. The frontend component appears to have the admin-only client-side block removed based on the visible code structure, but the backend guard relaxation for addHomeStay cannot be verified from the truncated diff.",
+  "generatedAt": "2026-03-02T17:25:22.319Z",
+  "summary": "The diff implements several of the required features: React Query cache invalidation in admin mutations (REQ-2), session error handling with user-friendly toasts (REQ-3), and frontend queries pulling data from the backend actor (REQ-1 frontend side). However, there is no evidence of backend/main.mo being modified for stable variable declarations (REQ-4), and the diff shows no Motoko file changes at all. REQ-4 cannot be confirmed as implemented.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Remove or relax the admin-only authorization guard on the 'addHomeStay' backend function so that authenticated non-admin users can add homestays without receiving an Unauthorized error, while unauthenticated callers are still blocked.",
-      "reason": "The backend/main.mo diff is truncated and the addHomeStay function body is not visible. The isAuthenticatedAdmin function is still present in the visible portion with no changes. There is no evidence that the authorization guard on addHomeStay was relaxed to allow authenticated non-admin or partner users. The project_state.json still marks AR-1 as pending.",
+      "id": "REQ-4",
+      "requirement": "Ensure the Motoko backend actor has stable storage for all core data types (Hotel, HomeStay, Booking, partner sessions, notifications) using stable variables so that data persists across canister upgrades without being lost.",
+      "reason": "No changes to backend/main.mo are present in the diff. The stable variable declarations for hotels, homestays, bookings, notifications, and partner sessions cannot be verified.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "React Query queries for rooms and homestays are configured with a short stale time (e.g., 30 seconds) to encourage frequent background refetches.",
+      "reason": "The useQueries.ts diff shows staleTime of 60_000ms (60 seconds) for some queries, but the truncated content does not confirm that homestay/room queries specifically use a short stale time of ~30 seconds as required.",
       "evidence": [
-        "backend/main.mo",
-        "project_state.json"
+        "frontend/src/hooks/useQueries.ts"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.55,
+  "hallucinated_features": [
+    {
+      "description": "syncPartnerToStorage utility imported and used in admin components, suggesting some data is still being synced to a localStorage storage layer.",
+      "reason": "REQ-1 explicitly requires that no critical data be sourced exclusively from localStorage, yet syncPartnerToStorage is imported in both AdminRoomManagement and HomeStayManagement, indicating localStorage usage was not fully removed.",
+      "evidence": [
+        "frontend/src/components/admin/AdminRoomManagement.tsx",
+        "frontend/src/components/admin/HomeStayManagement.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/components/admin/AdminRoomManagement.tsx",
     "frontend/src/components/admin/HomeStayManagement.tsx",
+    "frontend/src/components/admin/HotelManagement.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/BrowseRoomsPage.tsx",
+    "frontend/src/pages/PartnerDashboardPage.tsx",
+    "frontend/src/pages/RoomDetailPage.tsx",
     "project_state.json"
   ]
 }

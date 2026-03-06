@@ -1,21 +1,129 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix unauthorized error when saving homestays - Frontend",
+  "title": "Frontend real-time room update propagation and session error handling",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Remove client-side admin-only guard from HomeStayManagement component to allow authenticated users to submit homestay forms",
+      "id": "REQ-1",
+      "summary": "Ensure all room, homestay, hotel, and booking data is retrieved from the Motoko backend canister via actor queries so that BrowseRoomsPage, RoomDetailPage, and admin management components display shared data across devices",
       "acceptanceCriteria": [
-        "The 'Add Homestay' form is submittable by any authenticated user without a client-side authorization block.",
-        "On successful save, a success message is shown and the new homestay appears in the listing.",
-        "On failure (e.g. network error), a descriptive error message is shown without referencing 'admin only'."
+        "Creating or editing a room on one device is visible on another device after a page refresh",
+        "No critical room/homestay/booking data is sourced exclusively from localStorage",
+        "Backend actor queries are used to populate BrowseRoomsPage, RoomDetailPage, and admin management components"
       ],
       "file_operations": [
         {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update all homestay, hotel, and booking query hooks to fetch data exclusively from the backend actor using getAvailableHomeStays, getAvailableHotels, getHomeStayDetails, getAllBookings, and getMyBookings. Remove any localStorage fallback logic for primary data fetching. Ensure queries are enabled only when the actor is available."
+        },
+        {
+          "path": "frontend/src/pages/BrowseRoomsPage.tsx",
+          "operation": "modify",
+          "description": "Replace any localStorage-based homestay data fetching with the updated useQueries hook that calls the backend actor's getAvailableHomeStays method. Display loading and error states appropriately while data is being fetched from the canister."
+        },
+        {
+          "path": "frontend/src/pages/RoomDetailPage.tsx",
+          "operation": "modify",
+          "description": "Replace any localStorage-based room detail fetching with the updated useQueries hook that calls the backend actor's getHomeStayDetails method using the room ID from route params. Show loading state while fetching and handle null responses gracefully."
+        },
+        {
+          "path": "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "operation": "modify",
+          "description": "Ensure all room data is fetched via backend actor queries (getAvailableHomeStays or getPartnerRooms) rather than localStorage. Keep the existing create/edit/delete mutation logic that calls backend methods, but verify no localStorage reads are used for displaying the room list."
+        },
+        {
           "path": "frontend/src/components/admin/HomeStayManagement.tsx",
           "operation": "modify",
-          "description": "Remove any client-side admin-only authorization checks that prevent authenticated non-admin users from submitting the add-homestay form. Update error handling to display descriptive messages without 'admin only' references. Ensure the form submission calls the backend addHomeStayWithOptionalPasscode method for all authenticated users. Update success messaging to confirm the homestay was saved and refresh the listing."
+          "description": "Replace any localStorage-based homestay listing with backend actor queries using getAvailableHomeStays. Ensure the component fetches fresh data from the canister on mount and after mutations."
+        },
+        {
+          "path": "frontend/src/pages/PartnerDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the partner's room list is fetched exclusively via the backend actor's getPartnerRooms method using the authenticated partner ID, removing any localStorage dependencies for room data display."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "When an admin updates a room or homestay via AdminRoomManagement or HomeStayManagement, all connected frontend views must reflect the updated data immediately by invalidating React Query cache on successful mutations",
+      "acceptanceCriteria": [
+        "After an admin saves a room edit, BrowseRoomsPage shows the updated room details within seconds without a manual page reload",
+        "After an admin saves a room edit, RoomDetailPage shows updated price, availability, and amenities without a manual page reload",
+        "React Query cache is invalidated for homestay/room queries on every successful create, update, and delete mutation in admin components",
+        "React Query queries for rooms and homestays are configured with a short stale time (e.g., 30 seconds) to encourage frequent background refetches"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Configure all homestay and hotel queries with a staleTime of 30 seconds and refetchInterval of 30 seconds to enable automatic background refetching. For mutation hooks (useCreateHomeStay, useUpdateHomeStay, useDeleteHomeStay, useUpdatePartnerRoomDetails), add onSuccess callbacks that invalidate relevant query keys using queryClient.invalidateQueries for ['homestays'], ['hotels'], ['partnerRooms'], and ['homestayDetails'] to trigger immediate refetches across all components."
+        },
+        {
+          "path": "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "operation": "modify",
+          "description": "Ensure that after every successful create, update, or delete mutation for rooms, the component calls queryClient.invalidateQueries with the appropriate keys (['homestays', 'partnerRooms']) to force all dependent queries to refetch. Verify that mutation success handlers close dialogs and show success toasts after cache invalidation completes."
+        },
+        {
+          "path": "frontend/src/components/admin/HomeStayManagement.tsx",
+          "operation": "modify",
+          "description": "Add queryClient.invalidateQueries(['homestays']) to the onSuccess callback of all create, update, and delete mutations for homestays. Ensure the homestay list automatically refreshes after any successful mutation without requiring a manual page reload."
+        },
+        {
+          "path": "frontend/src/pages/PartnerDashboardPage.tsx",
+          "operation": "modify",
+          "description": "After the partner updates room price or availability using the useUpdatePartnerRoomDetails mutation, invalidate the ['partnerRooms'] query key to trigger an immediate refetch and display the updated data in the dashboard without a page reload."
+        },
+        {
+          "path": "frontend/src/pages/BrowseRoomsPage.tsx",
+          "operation": "modify",
+          "description": "Verify that the homestays query in this component benefits from the background refetching configured in useQueries (staleTime and refetchInterval). No additional changes should be needed if the query key matches the invalidated keys from admin mutations."
+        },
+        {
+          "path": "frontend/src/pages/RoomDetailPage.tsx",
+          "operation": "modify",
+          "description": "Verify that the homestay detail query in this component benefits from cache invalidation when admins update rooms. Ensure the query key includes the room ID (e.g., ['homestayDetails', roomId]) so that invalidateQueries(['homestayDetails']) triggers a refetch for all detail views."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Fix session-expired and unauthorized errors by checking Internet Identity auth state before backend calls and displaying clear user-friendly messages prompting re-authentication",
+      "acceptanceCriteria": [
+        "If a backend call fails due to an expired or missing session, a toast or modal displays a human-readable message asking the user to log out and log back in",
+        "Raw error strings such as 'Unauthorized' are never shown directly in the UI",
+        "After re-authentication, users can resume operations (create/edit rooms, make bookings) without errors"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add error handling logic to all mutation and query hooks. When a mutation or query fails, check if the error message contains keywords like 'Unauthorized', 'session', 'expired', or 'authentication'. If detected, display a user-friendly toast message: 'Your session has expired. Please log out and log back in to continue.' Use the Sonner toast library for consistent messaging. Do not expose raw error strings to the user interface."
+        },
+        {
+          "path": "frontend/src/hooks/useActor.ts",
+          "operation": "modify",
+          "description": "Add a helper function isSessionValid that checks if the current identity is authenticated and not anonymous before returning the actor. Ensure that any query or mutation using the actor first verifies the session is valid. If the session is invalid or expired, return an error state that triggers the user-friendly error handling in useQueries."
+        },
+        {
+          "path": "frontend/src/components/admin/AdminRoomManagement.tsx",
+          "operation": "modify",
+          "description": "Wrap all mutation calls (create, update, delete) in try-catch blocks. If an error is caught and matches session expiration patterns, display a toast: 'Your session has expired. Please log out and log back in.' and optionally navigate the user to the login page after a short delay."
+        },
+        {
+          "path": "frontend/src/components/admin/HomeStayManagement.tsx",
+          "operation": "modify",
+          "description": "Add error handling to all mutation operations. If a mutation fails with an authentication-related error, show a clear toast message prompting the user to re-authenticate instead of displaying the raw error string."
+        },
+        {
+          "path": "frontend/src/pages/BookingPage.tsx",
+          "operation": "modify",
+          "description": "Add error handling to the booking submission mutation. If the backend call fails due to session expiration, display a toast message: 'Your session has expired. Please log out and log back in to complete your booking.' Prevent the booking form from being submitted again until the user re-authenticates."
+        },
+        {
+          "path": "frontend/src/pages/PartnerDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Add error handling to the partner room update mutation. If the mutation fails with an unauthorized or session-expired error, show a user-friendly toast prompting the partner to log out and log back in, and disable further edits until re-authentication."
         }
       ]
     }

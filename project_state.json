@@ -1,20 +1,37 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Commercial homestay management app where users can add/manage homestays. Currently facing an authorization error preventing non-admin users from saving homestays.",
+  "summary": "Building a homestay management app with Motoko backend on ICP. Data is shared across devices, and room details should update in real-time as soon as the admin updates them.",
   "architectural_notes": [
-    "Homestay save operation requires authenticated admin role — authorization check is blocking regular users from adding homestays"
+    "Motoko backend on ICP for shared data storage across devices",
+    "Session management must handle expired drafts gracefully with clear user-facing error messages"
   ],
   "known_issues": [
-    "'Failed to save homestay: Unauthorized: Only authenticated admins can add homestays' error is shown when trying to save a homestay — authorization logic is too restrictive"
+    "Session expired errors appearing mid-build causing unauthorized errors for users"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-homestaymanagement-frontend-component-to-remove-any-client-side-admin-only-guard-or-error-handling-that-blocks-non-admin-authenticated-users-from-submitting-the-add-homestay-form-ensuring-the-form-submission-reaches-the-backend-for-all-authenticated-users",
-      "title": "Update the HomeStayManagement frontend component to remove any client-side admin-only guard or error handling that blocks non-admin authenticated users from submitting the add-homestay form, ensuring the form submission reaches the backend for all authenticated users.",
+      "id": "feature-ensure-all-room-homestay-hotel-and-booking-data-is-stored-in-and-retrieved-from-the-motoko-backend-canister-not-localstorage-so-that-data-is-shared-across-devices-and-sessions-all-crud-operations-for-rooms-homestays-hotels-and-bookings-must-go-through-backend-actor-calls",
+      "title": "Ensure all room, homestay, hotel, and booking data is stored in and retrieved from the Motoko backend canister (not localStorage) so that data is shared across devices and sessions. All CRUD operations for rooms, homestays, hotels, and bookings must go through backend actor calls.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-an-admin-updates-a-room-or-homestay-name-price-availability-photos-amenities-or-any-other-field-via-adminroommanagement-or-homestaymanagement-all-connected-frontend-views-browseroomspage-roomdetailpage-partnerdashboardpage-must-reflect-the-updated-data-immediately-without-requiring-a-full-page-reload-implement-react-query-cache-invalidation-on-all-successful-admin-mutation-operations-so-queries-re-fetch-from-the-backend-automatically",
+      "title": "When an admin updates a room or homestay (name, price, availability, photos, amenities, or any other field) via AdminRoomManagement or HomeStayManagement, all connected frontend views (BrowseRoomsPage, RoomDetailPage, PartnerDashboardPage) must reflect the updated data immediately without requiring a full page reload. Implement React Query cache invalidation on all successful admin mutation operations so queries re-fetch from the backend automatically.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-session-expired-unauthorized-errors-that-appear-during-or-after-backend-interactions-ensure-the-internet-identity-auth-state-is-checked-before-every-backend-actor-call-and-display-a-clear-user-friendly-message-prompting-the-user-to-log-out-and-log-back-in-if-the-session-is-invalid-do-not-show-raw-error-strings-to-the-user",
+      "title": "Fix the session-expired / unauthorized errors that appear during or after backend interactions. Ensure the Internet Identity auth state is checked before every backend actor call, and display a clear, user-friendly message prompting the user to log out and log back in if the session is invalid. Do not show raw error strings to the user.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
@@ -22,15 +39,21 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Remove or relax the admin-only authorization guard on the 'addHomeStay' (or equivalent) backend function so that authenticated users (including partners and non-admin authenticated principals) can successfully create and save homestay listings without receiving an 'Unauthorized: Only authenticated admins can add homestays' error.",
+      "summary": "Real-time room detail updates: when admin updates a room, changes should be reflected immediately for all users",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Ensure the Motoko backend actor has stable storage for all core data types (Hotel, HomeStay, Booking, partner sessions, notifications) using stable variables so that data persists across canister upgrades without being lost.",
       "reqIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "Fix unauthorized error when saving homestays",
+  "projectName": "Homestay Management App",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

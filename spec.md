@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the unauthorized error that prevents authenticated non-admin users (e.g., partners) from saving homestay listings.
+**Goal:** Rebuild the Motoko backend integration so all room, homestay, hotel, and booking data is stored in and retrieved from the canister, with real-time React Query cache invalidation on admin updates and proper session error handling.
 
 **Planned changes:**
-- Remove the admin-only authorization guard on the `addHomeStay` backend function, allowing any authenticated user to create homestay listings while still blocking unauthenticated callers.
-- Remove any client-side admin-only guard in the `HomeStayManagement` frontend component that blocks non-admin authenticated users from submitting the add-homestay form.
-- Ensure success and error messages on the frontend no longer reference "admin only" restrictions.
+- Migrate all CRUD operations for rooms, homestays, hotels, and bookings to use Motoko backend actor calls instead of localStorage
+- Declare all primary state maps (hotels, homestays, bookings, notifications, partner sessions) as stable variables in `main.mo` so data persists across canister upgrades
+- Implement React Query cache invalidation on every successful create, update, and delete mutation in admin components (AdminRoomManagement, HomeStayManagement) so BrowseRoomsPage, RoomDetailPage, and PartnerDashboardPage update automatically without a full page reload
+- Configure React Query with a short stale time (e.g., 30 seconds) for room and homestay queries to encourage frequent background refetches
+- Check Internet Identity auth state before every backend actor call; display a user-friendly toast or modal prompting re-login if the session is expired or invalid, instead of showing raw error strings
 
-**User-visible outcome:** Authenticated partner/non-admin users can successfully fill out and submit the Add Homestay form without receiving an "Unauthorized" error, and the new homestay appears in the listing upon success.
+**User-visible outcome:** Admin room/homestay edits are reflected across all pages within seconds without a manual reload, data is shared across devices and sessions, and users see clear re-login prompts instead of raw error messages when their session expires.

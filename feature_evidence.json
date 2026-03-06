@@ -2,10 +2,42 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-homestaymanagement-frontend-component-to-remove-any-client-side-admin-only-guard-or-error-handling-that-blocks-non-admin-authenticated-users-from-submitting-the-add-homestay-form-ensuring-the-form-submission-reaches-the-backend-for-all-authenticated-users",
-      "featureTitle": "Update the HomeStayManagement frontend component to remove any client-side admin-only guard or error handling that blocks non-admin authenticated users from submitting the add-homestay form, ensuring the form submission reaches the backend for all authenticated users.",
+      "featureId": "feature-ensure-all-room-homestay-hotel-and-booking-data-is-stored-in-and-retrieved-from-the-motoko-backend-canister-not-localstorage-so-that-data-is-shared-across-devices-and-sessions-all-crud-operations-for-rooms-homestays-hotels-and-bookings-must-go-through-backend-actor-calls",
+      "featureTitle": "Ensure all room, homestay, hotel, and booking data is stored in and retrieved from the Motoko backend canister (not localStorage) so that data is shared across devices and sessions. All CRUD operations for rooms, homestays, hotels, and bookings must go through backend actor calls.",
       "files": [
-        "frontend/src/components/admin/HomeStayManagement.tsx"
+        "frontend/src/components/admin/AdminRoomManagement.tsx",
+        "frontend/src/components/admin/HomeStayManagement.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/BrowseRoomsPage.tsx",
+        "frontend/src/pages/PartnerDashboardPage.tsx",
+        "frontend/src/pages/RoomDetailPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-when-an-admin-updates-a-room-or-homestay-name-price-availability-photos-amenities-or-any-other-field-via-adminroommanagement-or-homestaymanagement-all-connected-frontend-views-browseroomspage-roomdetailpage-partnerdashboardpage-must-reflect-the-updated-data-immediately-without-requiring-a-full-page-reload-implement-react-query-cache-invalidation-on-all-successful-admin-mutation-operations-so-queries-re-fetch-from-the-backend-automatically",
+      "featureTitle": "When an admin updates a room or homestay (name, price, availability, photos, amenities, or any other field) via AdminRoomManagement or HomeStayManagement, all connected frontend views (BrowseRoomsPage, RoomDetailPage, PartnerDashboardPage) must reflect the updated data immediately without requiring a full page reload. Implement React Query cache invalidation on all successful admin mutation operations so queries re-fetch from the backend automatically.",
+      "files": [
+        "frontend/src/components/admin/AdminRoomManagement.tsx",
+        "frontend/src/components/admin/HomeStayManagement.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/BrowseRoomsPage.tsx",
+        "frontend/src/pages/PartnerDashboardPage.tsx",
+        "frontend/src/pages/RoomDetailPage.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -20,6 +52,31 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-the-session-expired-unauthorized-errors-that-appear-during-or-after-backend-interactions-ensure-the-internet-identity-auth-state-is-checked-before-every-backend-actor-call-and-display-a-clear-user-friendly-message-prompting-the-user-to-log-out-and-log-back-in-if-the-session-is-invalid-do-not-show-raw-error-strings-to-the-user",
+      "featureTitle": "Fix the session-expired / unauthorized errors that appear during or after backend interactions. Ensure the Internet Identity auth state is checked before every backend actor call, and display a clear, user-friendly message prompting the user to log out and log back in if the session is invalid. Do not show raw error strings to the user.",
+      "files": [
+        "frontend/src/components/admin/AdminRoomManagement.tsx",
+        "frontend/src/components/admin/HomeStayManagement.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/PartnerDashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

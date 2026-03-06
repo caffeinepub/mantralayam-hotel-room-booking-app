@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Edit, Hotel as HotelIcon, MapPin, Star, Phone, User, MessageSquare, DoorOpen, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Edit, Hotel as HotelIcon, MapPin, Star, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -16,11 +15,11 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useAddHotel, useUpdateHotel, useDeleteHotel, useGetHotels } from '../../hooks/useQueries';
+import { useAddHotel, useUpdateHotel, useDeleteHotel, useGetAdminHotels } from '../../hooks/useQueries';
 import { ExternalBlob, type Hotel as BackendHotel } from '../../backend';
 
 export default function HotelManagement() {
-  const { data: hotels = [], isLoading } = useGetHotels();
+  const { data: hotels = [], isLoading } = useGetAdminHotels();
   const addHotel = useAddHotel();
   const updateHotel = useUpdateHotel();
   const deleteHotel = useDeleteHotel();
@@ -28,7 +27,6 @@ export default function HotelManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHotel, setEditingHotel] = useState<BackendHotel | null>(null);
 
-  // Form state
   const [hotelName, setHotelName] = useState('');
   const [hotelAddress, setHotelAddress] = useState('');
   const [hotelDescription, setHotelDescription] = useState('');
@@ -46,7 +44,7 @@ export default function HotelManagement() {
     setEditingHotel(null);
   };
 
-  const handleOpenDialog = async (hotel?: BackendHotel) => {
+  const handleOpenDialog = (hotel?: BackendHotel) => {
     if (hotel) {
       setEditingHotel(hotel);
       setHotelName(hotel.name);
@@ -65,17 +63,15 @@ export default function HotelManagement() {
     if (!files || files.length === 0) return;
 
     const newPhotos: ExternalBlob[] = [];
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
-      // Validate file type
+
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not an image file`);
         continue;
       }
 
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error(`${file.name} is too large (max 5MB)`);
         continue;
@@ -84,12 +80,12 @@ export default function HotelManagement() {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
-        
+
         const photoIndex = hotelPhotos.length + newPhotos.length;
         const blob = ExternalBlob.fromBytes(uint8Array).withUploadProgress((percentage) => {
-          setUploadProgress(prev => ({ ...prev, [photoIndex]: percentage }));
+          setUploadProgress((prev) => ({ ...prev, [photoIndex]: percentage }));
         });
-        
+
         newPhotos.push(blob);
       } catch (error) {
         console.error('Error processing file:', error);
@@ -98,20 +94,19 @@ export default function HotelManagement() {
     }
 
     if (newPhotos.length > 0) {
-      setHotelPhotos(prev => [...prev, ...newPhotos]);
+      setHotelPhotos((prev) => [...prev, ...newPhotos]);
       toast.success(`${newPhotos.length} photo(s) added`);
     }
 
-    // Clear the input
     e.target.value = '';
   };
 
   const handleRemovePhoto = (index: number) => {
-    setHotelPhotos(prev => prev.filter((_, i) => i !== index));
-    setUploadProgress(prev => {
-      const newProgress = { ...prev };
-      delete newProgress[index];
-      return newProgress;
+    setHotelPhotos((prev) => prev.filter((_, i) => i !== index));
+    setUploadProgress((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
     });
   };
 
@@ -127,35 +122,32 @@ export default function HotelManagement() {
         name: hotelName.trim(),
         address: hotelAddress.trim(),
         description: hotelDescription.trim(),
-        amenities: hotelAmenities.split(',').map(a => a.trim()).filter(Boolean),
+        amenities: hotelAmenities
+          .split(',')
+          .map((a) => a.trim())
+          .filter(Boolean),
         photos: hotelPhotos,
       };
 
       if (editingHotel) {
         await updateHotel.mutateAsync(hotelData);
-        toast.success('Hotel updated successfully');
       } else {
         await addHotel.mutateAsync(hotelData);
-        toast.success('Hotel added successfully');
       }
 
       setIsDialogOpen(false);
       resetForm();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving hotel:', error);
-      toast.error(error.message || 'Failed to save hotel');
     }
   };
 
   const handleDeleteHotel = async (hotelId: string) => {
     if (!confirm('Are you sure you want to delete this hotel?')) return;
-
     try {
       await deleteHotel.mutateAsync(hotelId);
-      toast.success('Hotel deleted successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting hotel:', error);
-      toast.error(error.message || 'Failed to delete hotel');
     }
   };
 
@@ -170,7 +162,7 @@ export default function HotelManagement() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
+            <Button
               onClick={() => handleOpenDialog()}
               className="gradient-saffron-gold text-white border-0 hover:opacity-90 gap-2"
             >
@@ -193,7 +185,9 @@ export default function HotelManagement() {
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="hotelName" className="text-slate-300">Hotel Name *</Label>
+                    <Label htmlFor="hotelName" className="text-slate-300">
+                      Hotel Name *
+                    </Label>
                     <Input
                       id="hotelName"
                       value={hotelName}
@@ -203,7 +197,9 @@ export default function HotelManagement() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="hotelAddress" className="text-slate-300">Address</Label>
+                    <Label htmlFor="hotelAddress" className="text-slate-300">
+                      Address
+                    </Label>
                     <Input
                       id="hotelAddress"
                       value={hotelAddress}
@@ -214,7 +210,9 @@ export default function HotelManagement() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="hotelDescription" className="text-slate-300">Description</Label>
+                  <Label htmlFor="hotelDescription" className="text-slate-300">
+                    Description
+                  </Label>
                   <Textarea
                     id="hotelDescription"
                     value={hotelDescription}
@@ -233,7 +231,9 @@ export default function HotelManagement() {
                   Amenities
                 </h3>
                 <div className="space-y-2">
-                  <Label htmlFor="hotelAmenities" className="text-slate-300">Amenities (comma-separated)</Label>
+                  <Label htmlFor="hotelAmenities" className="text-slate-300">
+                    Amenities (comma-separated)
+                  </Label>
                   <Input
                     id="hotelAmenities"
                     value={hotelAmenities}
@@ -252,8 +252,8 @@ export default function HotelManagement() {
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <Label 
-                      htmlFor="photoUpload" 
+                    <Label
+                      htmlFor="photoUpload"
                       className="cursor-pointer px-4 py-2 rounded-lg bg-primary text-white hover:opacity-90 transition-opacity flex items-center gap-2"
                     >
                       <Upload className="h-4 w-4" />
@@ -272,7 +272,6 @@ export default function HotelManagement() {
                     </span>
                   </div>
 
-                  {/* Photo Preview Grid */}
                   {hotelPhotos.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {hotelPhotos.map((photo, index) => (
@@ -292,14 +291,15 @@ export default function HotelManagement() {
                           >
                             <X className="h-4 w-4" />
                           </Button>
-                          {uploadProgress[index] !== undefined && uploadProgress[index] < 100 && (
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-700">
-                              <div 
-                                className="h-full bg-primary transition-all duration-300"
-                                style={{ width: `${uploadProgress[index]}%` }}
-                              />
-                            </div>
-                          )}
+                          {uploadProgress[index] !== undefined &&
+                            uploadProgress[index] < 100 && (
+                              <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-700">
+                                <div
+                                  className="h-full bg-primary transition-all duration-300"
+                                  style={{ width: `${uploadProgress[index]}%` }}
+                                />
+                              </div>
+                            )}
                         </div>
                       ))}
                     </div>
@@ -308,15 +308,15 @@ export default function HotelManagement() {
               </div>
             </div>
             <DialogFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsDialogOpen(false)}
                 className="border-slate-700 text-slate-300"
                 disabled={isSaving}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleSaveHotel}
                 className="gradient-saffron-gold text-white border-0 hover:opacity-90"
                 disabled={isSaving}
@@ -345,7 +345,10 @@ export default function HotelManagement() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {hotels.map((hotel) => (
-            <Card key={hotel.id} className="glass-card bg-slate-900/50 border-slate-800 hover:border-primary/50 transition-colors">
+            <Card
+              key={hotel.id}
+              className="glass-card bg-slate-900/50 border-slate-800 hover:border-primary/50 transition-colors"
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -366,7 +369,7 @@ export default function HotelManagement() {
                 {hotel.description && (
                   <p className="text-sm text-slate-300 line-clamp-2">{hotel.description}</p>
                 )}
-                
+
                 {hotel.amenities.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {hotel.amenities.slice(0, 3).map((amenity, idx) => (
@@ -383,9 +386,7 @@ export default function HotelManagement() {
                 )}
 
                 {hotel.photos && hotel.photos.length > 0 && (
-                  <div className="text-sm text-slate-400">
-                    {hotel.photos.length} photo(s)
-                  </div>
+                  <div className="text-sm text-slate-400">{hotel.photos.length} photo(s)</div>
                 )}
 
                 <div className="flex gap-2 pt-2">

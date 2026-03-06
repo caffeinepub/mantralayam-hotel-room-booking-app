@@ -1,345 +1,385 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from '../hooks/useActor';
-import { HomeStay, PartnerProfile } from '../backend';
+import { toast } from 'sonner';
+import {
+  Home,
+  LogOut,
+  Edit,
+  Check,
+  X,
+  Loader2,
+  RefreshCw,
+  DollarSign,
+  ToggleLeft,
+  ToggleRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LogOut, Home, Phone, Edit2, Check, X, RefreshCw } from 'lucide-react';
+import {
+  useGetAuthenticatedPartnerId,
+  useGetPartnerProfile,
+  useGetPartnerRooms,
+  useUpdatePartnerRoomDetails,
+  useLogoutPartner,
+} from '../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import type { HomeStay } from '../backend';
 
-function useAuthenticatedPartnerId() {
-  const { actor, isFetching: actorFetching } = useActor();
-  return useQuery<string | null>({
-    queryKey: ['authenticatedPartnerId'],
-    queryFn: async () => {
-      if (!actor) return null;
-      return actor.getAuthenticatedPartnerId();
-    },
-    enabled: !!actor && !actorFetching,
-    retry: false,
-  });
+function isSessionError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /unauthorized|session|expired|authentication/i.test(msg);
 }
 
-function usePartnerProfile(partnerId: string | null) {
-  const { actor, isFetching: actorFetching } = useActor();
-  return useQuery<PartnerProfile | null>({
-    queryKey: ['partnerProfile', partnerId],
-    queryFn: async () => {
-      if (!actor || !partnerId) return null;
-      return actor.getPartnerProfile(partnerId);
-    },
-    enabled: !!actor && !actorFetching && !!partnerId,
-    retry: false,
-  });
-}
+function RoomEditCard({
+  room,
+  onSave,
+  isSaving,
+}: {
+  room: HomeStay;
+  onSave: (roomId: string, price: number, availability: boolean) => Promise<void>;
+  isSaving: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [price, setPrice] = useState(String(room.price));
+  const [availability, setAvailability] = useState(room.availability);
 
-function usePartnerRooms(partnerId: string | null) {
-  const { actor, isFetching: actorFetching } = useActor();
-  return useQuery<HomeStay[]>({
-    queryKey: ['partnerRooms', partnerId],
-    queryFn: async () => {
-      if (!actor || !partnerId) return [];
-      return actor.getPartnerRooms(partnerId);
-    },
-    enabled: !!actor && !actorFetching && !!partnerId,
-    retry: false,
-  });
+  useEffect(() => {
+    setPrice(String(room.price));
+    setAvailability(room.availability);
+  }, [room.price, room.availability]);
+
+  const handleSave = async () => {
+    const priceNum = Number(price);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      toast.error('Please enter a valid price.');
+      return;
+    }
+    await onSave(room.id, priceNum, availability);
+    setEditing(false);
+  };
+
+  const photoUrl =
+    room.photoUrls?.[0] ||
+    (room.photos?.[0] ? room.photos[0].getDirectURL() : null) ||
+    '/assets/generated/standard-room.dim_800x600.jpg';
+
+  return (
+    <Card className="overflow-hidden border-border shadow-saffron">
+      <div className="relative">
+        <img
+          src={photoUrl}
+          alt={room.partnerName || 'Room'}
+          className="w-full h-40 object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/assets/generated/standard-room.dim_800x600.jpg';
+          }}
+        />
+        <div className="absolute top-3 right-3">
+          <Badge
+            variant={room.availability ? 'default' : 'secondary'}
+            className={room.availability ? 'bg-primary text-primary-foreground' : ''}
+          >
+            {room.availability ? 'Available' : 'Unavailable'}
+          </Badge>
+        </div>
+      </div>
+
+      <CardContent className="p-4 space-y-3">
+        <div>
+          <h3 className="font-semibold text-foreground">{room.partnerName || 'My Room'}</h3>
+          <p className="text-sm text-muted-foreground capitalize">{room.roomType} room</p>
+        </div>
+
+        {editing ? (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Price per night (₹)</label>
+              <Input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAvailability((a) => !a)}
+                className="flex items-center gap-2 text-sm"
+              >
+                {availability ? (
+                  <ToggleRight className="w-6 h-6 text-primary" />
+                ) : (
+                  <ToggleLeft className="w-6 h-6 text-muted-foreground" />
+                )}
+                <span>{availability ? 'Available' : 'Unavailable'}</span>
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex-1 bg-primary text-primary-foreground"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditing(false);
+                  setPrice(String(room.price));
+                  setAvailability(room.availability);
+                }}
+                className="flex-1"
+              >
+                <X className="w-4 h-4 mr-1" /> Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xl font-bold text-primary">
+                ₹{Number(room.price).toLocaleString()}
+              </span>
+              <span className="text-muted-foreground text-sm">/night</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditing(true)}
+              className="gap-1"
+            >
+              <Edit className="w-3.5 h-3.5" /> Edit
+            </Button>
+          </div>
+        )}
+
+        {room.amenities.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {room.amenities.slice(0, 3).map((a) => (
+              <span
+                key={a}
+                className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full"
+              >
+                {a}
+              </span>
+            ))}
+            {room.amenities.length > 3 && (
+              <span className="text-xs text-muted-foreground">+{room.amenities.length - 3}</span>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function PartnerDashboardPage() {
   const navigate = useNavigate();
-  const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  const { data: partnerId, isLoading: partnerIdLoading, isFetched: partnerIdFetched } = useAuthenticatedPartnerId();
-  const { data: partnerProfile, isLoading: profileLoading } = usePartnerProfile(partnerId ?? null);
-  const { data: rooms = [], isLoading: roomsLoading, refetch: refetchRooms } = usePartnerRooms(partnerId ?? null);
+  const {
+    data: partnerId,
+    isLoading: partnerIdLoading,
+    isError: partnerIdError,
+  } = useGetAuthenticatedPartnerId();
 
-  const [editingRoom, setEditingRoom] = useState<string | null>(null);
-  const [editPrice, setEditPrice] = useState('');
-  const [editAvailability, setEditAvailability] = useState(true);
+  const {
+    data: partnerProfile,
+    isLoading: profileLoading,
+  } = useGetPartnerProfile(partnerId ?? '');
 
-  const isLoading = partnerIdLoading || profileLoading || roomsLoading;
+  const {
+    data: rooms = [],
+    isLoading: roomsLoading,
+    refetch: refetchRooms,
+    isFetching: roomsFetching,
+  } = useGetPartnerRooms(partnerId ?? '');
 
-  // If partner ID fetch is done and there's no partner ID, redirect to login
+  const updateRoomMutation = useUpdatePartnerRoomDetails();
+  const logoutMutation = useLogoutPartner();
+
+  // Redirect if not authenticated
   useEffect(() => {
-    if (partnerIdFetched && !partnerId) {
+    if (!partnerIdLoading && (partnerIdError || partnerId === null)) {
       navigate({ to: '/partner-login' });
     }
-  }, [partnerIdFetched, partnerId, navigate]);
+  }, [partnerIdLoading, partnerIdError, partnerId, navigate]);
 
-  const updateRoomMutation = useMutation({
-    mutationFn: async ({ roomId, price, availability }: { roomId: string; price: number; availability: boolean }) => {
-      if (!actor) throw new Error('Actor not available');
-      await actor.updatePartnerRoomDetails({
+  const handleSaveRoom = async (roomId: string, price: number, availability: boolean) => {
+    if (!partnerId) return;
+    try {
+      await updateRoomMutation.mutateAsync({
         roomId,
-        price: BigInt(price),
+        price: BigInt(Math.round(price)),
         availability,
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['partnerRooms', partnerId] });
-      queryClient.invalidateQueries({ queryKey: ['availableHomestays'] });
-      setEditingRoom(null);
-    },
-  });
-
-  const handleLogout = async () => {
-    if (actor) {
-      try {
-        await actor.logoutPartner();
-      } catch (e) {
-        // ignore
+      // Invalidate all relevant queries so BrowseRoomsPage and RoomDetailPage update immediately
+      queryClient.invalidateQueries({ queryKey: ['partnerRooms'] });
+      queryClient.invalidateQueries({ queryKey: ['homestays'] });
+      queryClient.invalidateQueries({ queryKey: ['homestayDetails', roomId] });
+      queryClient.invalidateQueries({ queryKey: ['homestayDetails'] });
+    } catch (err) {
+      if (isSessionError(err)) {
+        toast.error('Your session has expired. Please log out and log back in.');
+        setTimeout(() => navigate({ to: '/partner-login' }), 2000);
+      } else {
+        toast.error('Failed to update room. Please try again.');
       }
     }
-    localStorage.removeItem('partnerSession');
-    queryClient.invalidateQueries({ queryKey: ['authenticatedPartnerId'] });
-    queryClient.invalidateQueries({ queryKey: ['partnerRooms'] });
-    queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
-    navigate({ to: '/partner-login' });
   };
 
-  const startEdit = (room: HomeStay) => {
-    setEditingRoom(room.id);
-    setEditPrice(String(Number(room.price)));
-    setEditAvailability(room.availability);
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      localStorage.removeItem('partnerAuth');
+      navigate({ to: '/partner-login' });
+    } catch {
+      // Still navigate even if logout call fails
+      localStorage.removeItem('partnerAuth');
+      navigate({ to: '/partner-login' });
+    }
   };
 
-  const cancelEdit = () => {
-    setEditingRoom(null);
-  };
+  const isLoading = partnerIdLoading || profileLoading;
 
-  const saveEdit = (roomId: string) => {
-    const price = parseInt(editPrice, 10);
-    if (isNaN(price) || price < 0) return;
-    updateRoomMutation.mutate({ roomId, price, availability: editAvailability });
-  };
-
-  // Show loading while checking authentication
-  if (partnerIdLoading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-muted-foreground">Verifying session...</p>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-64 rounded-xl" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  // If no partner ID after loading, show redirect message
-  if (!partnerId) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Session expired. Redirecting to login...</p>
-          <Button onClick={() => navigate({ to: '/partner-login' })}>Go to Login</Button>
-        </div>
-      </div>
-    );
-  }
+  if (!partnerId) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Partner Dashboard</h1>
-            {partnerProfile && (
-              <p className="text-muted-foreground mt-1">
-                Welcome back, <span className="text-foreground font-medium">{partnerProfile.name}</span>
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetchRooms()}
-              disabled={roomsLoading}
-            >
-              <RefreshCw className={`w-4 h-4 ${roomsLoading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="text-destructive border-destructive/30 hover:bg-destructive/10"
-            >
-              <LogOut className="w-4 h-4 mr-1" />
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        {/* Partner Profile Card */}
-        {partnerProfile && (
-          <div className="bg-card border border-border rounded-2xl p-5 mb-6">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Your Profile
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <Home className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Name</p>
-                  <p className="text-sm font-medium text-foreground">{partnerProfile.name}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Contact</p>
-                  <p className="text-sm font-medium text-foreground">{partnerProfile.contact}</p>
-                </div>
-              </div>
+    <main className="min-h-screen bg-background pb-16">
+      {/* Header */}
+      <div className="bg-card border-b border-border px-4 py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Home className="w-5 h-5 text-primary" />
             </div>
-          </div>
-        )}
-
-        {/* Rooms Section */}
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            Your Rooms
-            {rooms.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({rooms.length} {rooms.length === 1 ? 'room' : 'rooms'})
-              </span>
-            )}
-          </h2>
-
-          {roomsLoading && (
-            <div className="space-y-4">
-              {[1, 2].map(i => (
-                <div key={i} className="bg-card border border-border rounded-2xl p-5">
-                  <Skeleton className="h-5 w-1/3 mb-3" />
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!roomsLoading && rooms.length === 0 && (
-            <div className="text-center py-12 bg-card border border-border rounded-2xl">
-              <div className="text-4xl mb-3">🏠</div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">No Rooms Assigned</h3>
-              <p className="text-muted-foreground text-sm">
-                Contact the admin to have rooms assigned to your account.
+            <div>
+              <h1 className="font-semibold text-foreground">
+                {partnerProfile?.name || 'Partner Dashboard'}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {rooms.length} room{rooms.length !== 1 ? 's' : ''} managed
               </p>
             </div>
-          )}
-
-          {!roomsLoading && rooms.length > 0 && (
-            <div className="space-y-4">
-              {rooms.map(room => {
-                const isEditing = editingRoom === room.id;
-                const photoUrl = room.photoUrls?.[0] || room.photos?.[0]?.getDirectURL();
-                const roomTypeLabel = room.roomType === 'single' ? 'Single'
-                  : room.roomType === 'double' ? 'Double'
-                  : room.roomType === 'suite' ? 'Suite'
-                  : String(room.roomType);
-
-                return (
-                  <div key={room.id} className="bg-card border border-border rounded-2xl overflow-hidden">
-                    <div className="flex gap-4 p-5">
-                      {/* Photo */}
-                      {photoUrl && (
-                        <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-muted">
-                          <img src={photoUrl} alt={room.partnerName} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-semibold text-foreground truncate">
-                            {room.partnerName || 'Homestay'}
-                          </h3>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Badge variant={room.availability ? 'default' : 'secondary'}>
-                              {room.availability ? 'Available' : 'Unavailable'}
-                            </Badge>
-                            <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                              {roomTypeLabel}
-                            </span>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {room.description}
-                        </p>
-
-                        {isEditing ? (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1">
-                                <Label className="text-xs text-muted-foreground mb-1 block">Price per night (₹)</Label>
-                                <Input
-                                  type="number"
-                                  value={editPrice}
-                                  onChange={e => setEditPrice(e.target.value)}
-                                  className="h-8 text-sm"
-                                  min="0"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2 pt-5">
-                                <Switch
-                                  checked={editAvailability}
-                                  onCheckedChange={setEditAvailability}
-                                />
-                                <span className="text-sm text-muted-foreground">Available</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => saveEdit(room.id)}
-                                disabled={updateRoomMutation.isPending}
-                                className="bg-primary text-primary-foreground"
-                              >
-                                {updateRoomMutation.isPending ? (
-                                  <span className="w-3 h-3 border border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                                ) : (
-                                  <Check className="w-3 h-3" />
-                                )}
-                                Save
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={cancelEdit}>
-                                <X className="w-3 h-3" />
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-primary">
-                              ₹{Number(room.price).toLocaleString()}/night
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => startEdit(room)}
-                            >
-                              <Edit2 className="w-3 h-3 mr-1" />
-                              Edit
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+            className="gap-1"
+          >
+            {logoutMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <LogOut className="w-4 h-4" />
+            )}
+            Logout
+          </Button>
         </div>
       </div>
-    </div>
+
+      {/* Stats */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+          <Card className="border-border">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm text-muted-foreground font-normal">Total Rooms</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <p className="text-2xl font-bold text-foreground">{rooms.length}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm text-muted-foreground font-normal">Available</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <p className="text-2xl font-bold text-primary">
+                {rooms.filter((r) => r.availability).length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-border col-span-2 sm:col-span-1">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm text-muted-foreground font-normal flex items-center gap-1">
+                <DollarSign className="w-3.5 h-3.5" /> Avg. Price
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <p className="text-2xl font-bold text-foreground">
+                {rooms.length > 0
+                  ? `₹${Math.round(
+                      rooms.reduce((sum, r) => sum + Number(r.price), 0) / rooms.length
+                    ).toLocaleString()}`
+                  : '—'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Rooms */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-foreground">My Rooms</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetchRooms()}
+            disabled={roomsFetching}
+            className="text-xs gap-1"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${roomsFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+
+        {roomsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2].map((i) => (
+              <Skeleton key={i} className="h-64 rounded-xl" />
+            ))}
+          </div>
+        ) : rooms.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Home className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No rooms assigned to your account yet.</p>
+            <p className="text-sm mt-1">Contact the admin to add your rooms.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rooms.map((room) => (
+              <RoomEditCard
+                key={room.id}
+                room={room}
+                onSave={handleSaveRoom}
+                isSaving={updateRoomMutation.isPending}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
