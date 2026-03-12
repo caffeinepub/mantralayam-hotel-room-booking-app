@@ -1,25 +1,30 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import { Star, Trash2, User, CheckCircle, Search } from 'lucide-react';
-import { toast } from 'sonner';
-import { getReviews, deleteReview, getAverageRating, type Review } from '../../lib/reviewStorage';
-import { getHomeStays } from '../../lib/dataStorage';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { CheckCircle, Search, Star, Trash2, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { getHomeStays } from "../../lib/dataStorage";
+import {
+  type Review,
+  deleteReview,
+  getAverageRating,
+  getReviews,
+} from "../../lib/reviewStorage";
 
 export default function ReviewManagement() {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterRating, setFilterRating] = useState<number | null>(null);
 
   useEffect(() => {
     loadReviews();
-    
+
     const handleUpdate = () => loadReviews();
-    window.addEventListener('reviewsUpdated', handleUpdate);
-    return () => window.removeEventListener('reviewsUpdated', handleUpdate);
+    window.addEventListener("reviewsUpdated", handleUpdate);
+    return () => window.removeEventListener("reviewsUpdated", handleUpdate);
   }, []);
 
   const loadReviews = () => {
@@ -28,17 +33,23 @@ export default function ReviewManagement() {
   };
 
   const handleDeleteReview = (reviewId: string) => {
-    if (confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
+    if (
+      confirm(
+        "Are you sure you want to delete this review? This action cannot be undone.",
+      )
+    ) {
       deleteReview(reviewId);
-      toast.success('Review deleted successfully');
+      toast.success("Review deleted successfully");
       loadReviews();
     }
   };
 
-  const filteredReviews = reviews.filter(review => {
-    const matchesSearch = review.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.comment.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRating = filterRating === null || review.rating === filterRating;
+  const filteredReviews = reviews.filter((review) => {
+    const matchesSearch =
+      review.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      review.comment.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRating =
+      filterRating === null || review.rating === filterRating;
     return matchesSearch && matchesRating;
   });
 
@@ -49,7 +60,7 @@ export default function ReviewManagement() {
           <Star
             key={star}
             className={`h-4 w-4 ${
-              star <= count ? 'fill-amber-400 text-amber-400' : 'text-gray-300'
+              star <= count ? "fill-amber-400 text-amber-400" : "text-gray-300"
             }`}
           />
         ))}
@@ -59,13 +70,16 @@ export default function ReviewManagement() {
 
   const getHomeStayName = (homeStayId: string): string => {
     const homeStays = getHomeStays();
-    const homeStay = homeStays.find(h => h.id === homeStayId);
-    return homeStay?.name || 'Unknown HomeStay';
+    const homeStay = homeStays.find((h) => h.id === homeStayId);
+    return homeStay?.name || "Unknown HomeStay";
   };
 
-  const averageRating = reviews.length > 0
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : '0.0';
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        ).toFixed(1)
+      : "0.0";
 
   return (
     <Card className="glass-card bg-slate-900/60 border-slate-800 shadow-saffron-lg">
@@ -76,8 +90,12 @@ export default function ReviewManagement() {
               <Star className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-2xl text-slate-100">Review Management</CardTitle>
-              <p className="text-sm text-slate-400">Moderate customer reviews and ratings</p>
+              <CardTitle className="text-2xl text-slate-100">
+                Review Management
+              </CardTitle>
+              <p className="text-sm text-slate-400">
+                Moderate customer reviews and ratings
+              </p>
             </div>
           </div>
           <div className="text-right">
@@ -91,24 +109,26 @@ export default function ReviewManagement() {
         <div className="grid gap-4 md:grid-cols-4">
           <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
             <p className="text-sm text-slate-400">Total Reviews</p>
-            <p className="text-2xl font-bold text-slate-100">{reviews.length}</p>
+            <p className="text-2xl font-bold text-slate-100">
+              {reviews.length}
+            </p>
           </div>
           <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
             <p className="text-sm text-slate-400">5 Star Reviews</p>
             <p className="text-2xl font-bold text-slate-100">
-              {reviews.filter(r => r.rating === 5).length}
+              {reviews.filter((r) => r.rating === 5).length}
             </p>
           </div>
           <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
             <p className="text-sm text-slate-400">4 Star Reviews</p>
             <p className="text-2xl font-bold text-slate-100">
-              {reviews.filter(r => r.rating === 4).length}
+              {reviews.filter((r) => r.rating === 4).length}
             </p>
           </div>
           <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
             <p className="text-sm text-slate-400">Verified Reviews</p>
             <p className="text-2xl font-bold text-slate-100">
-              {reviews.filter(r => r.verified).length}
+              {reviews.filter((r) => r.verified).length}
             </p>
           </div>
         </div>
@@ -129,19 +149,25 @@ export default function ReviewManagement() {
           <div className="flex gap-2">
             <Button
               onClick={() => setFilterRating(null)}
-              variant={filterRating === null ? 'default' : 'outline'}
+              variant={filterRating === null ? "default" : "outline"}
               size="sm"
-              className={filterRating === null ? 'gradient-saffron-gold text-white' : ''}
+              className={
+                filterRating === null ? "gradient-saffron-gold text-white" : ""
+              }
             >
               All
             </Button>
-            {[5, 4, 3, 2, 1].map(rating => (
+            {[5, 4, 3, 2, 1].map((rating) => (
               <Button
                 key={rating}
                 onClick={() => setFilterRating(rating)}
-                variant={filterRating === rating ? 'default' : 'outline'}
+                variant={filterRating === rating ? "default" : "outline"}
                 size="sm"
-                className={filterRating === rating ? 'gradient-saffron-gold text-white' : ''}
+                className={
+                  filterRating === rating
+                    ? "gradient-saffron-gold text-white"
+                    : ""
+                }
               >
                 {rating}★
               </Button>
@@ -159,7 +185,10 @@ export default function ReviewManagement() {
           <ScrollArea className="h-[500px]">
             <div className="space-y-4">
               {filteredReviews.map((review) => (
-                <div key={review.id} className="p-4 rounded-lg border glass-card bg-slate-800/50 border-slate-700">
+                <div
+                  key={review.id}
+                  className="p-4 rounded-lg border glass-card bg-slate-800/50 border-slate-700"
+                >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3 flex-1">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
@@ -167,7 +196,9 @@ export default function ReviewManagement() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold text-slate-100">{review.customerName}</p>
+                          <p className="font-semibold text-slate-100">
+                            {review.customerName}
+                          </p>
                           {review.verified && (
                             <Badge className="gap-1 bg-green-500 text-white border-0 text-xs">
                               <CheckCircle className="h-3 w-3" />
@@ -176,9 +207,13 @@ export default function ReviewManagement() {
                           )}
                         </div>
                         <p className="text-xs text-slate-400">
-                          {getHomeStayName(review.homeStayId)} • {new Date(review.timestamp).toLocaleDateString('en-IN', {
-                            dateStyle: 'medium',
-                          })}
+                          {getHomeStayName(review.homeStayId)} •{" "}
+                          {new Date(review.timestamp).toLocaleDateString(
+                            "en-IN",
+                            {
+                              dateStyle: "medium",
+                            },
+                          )}
                         </p>
                       </div>
                     </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,29 +6,32 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Star, Clock } from 'lucide-react';
-import { toast } from 'sonner';
-import { createIssue } from '../lib/issueStorage';
-import { addPermanentNotification } from '../lib/notificationStorage';
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Clock, Star } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createIssue } from "../lib/issueStorage";
+import { addPermanentNotification } from "../lib/notificationStorage";
 
 interface TimeoutReviewPromptDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-export default function TimeoutReviewPromptDialog({ open, onClose }: TimeoutReviewPromptDialogProps) {
+export default function TimeoutReviewPromptDialog({
+  open,
+  onClose,
+}: TimeoutReviewPromptDialogProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toast.error('Please select a rating');
+      toast.error("Please select a rating");
       return;
     }
 
@@ -36,27 +39,27 @@ export default function TimeoutReviewPromptDialog({ open, onClose }: TimeoutRevi
 
     try {
       // Save feedback as an issue with special category
-      const feedbackText = `Rating: ${rating}/5${feedback.trim() ? `\n\nFeedback: ${feedback.trim()}` : ''}`;
-      
+      const feedbackText = `Rating: ${rating}/5${feedback.trim() ? `\n\nFeedback: ${feedback.trim()}` : ""}`;
+
       createIssue({
-        category: 'service',
+        category: "service",
         description: `[Timeout Review] ${feedbackText}`,
-        contactName: 'Anonymous User',
-        contactPhone: 'N/A',
+        contactName: "Anonymous User",
+        contactPhone: "N/A",
       });
 
       // Create notification using 'issues' category
       addPermanentNotification(
-        `User feedback received: ${rating}/5 stars${feedback.trim() ? ' with comments' : ''}`,
-        'issues',
-        'service'
+        `User feedback received: ${rating}/5 stars${feedback.trim() ? " with comments" : ""}`,
+        "issues",
+        "service",
       );
 
-      toast.success('Thank you for your feedback!');
+      toast.success("Thank you for your feedback!");
       onClose();
     } catch (error) {
-      console.error('Error submitting feedback:', error);
-      toast.error('Failed to submit feedback');
+      console.error("Error submitting feedback:", error);
+      toast.error("Failed to submit feedback");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,7 +78,8 @@ export default function TimeoutReviewPromptDialog({ open, onClose }: TimeoutRevi
             We Value Your Feedback
           </DialogTitle>
           <DialogDescription>
-            Your session has timed out due to inactivity. Before you go, would you mind sharing your experience?
+            Your session has timed out due to inactivity. Before you go, would
+            you mind sharing your experience?
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
@@ -94,8 +98,8 @@ export default function TimeoutReviewPromptDialog({ open, onClose }: TimeoutRevi
                   <Star
                     className={`h-8 w-8 ${
                       star <= (hoveredRating || rating)
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'text-muted-foreground'
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-muted-foreground"
                     }`}
                   />
                 </button>
@@ -103,17 +107,19 @@ export default function TimeoutReviewPromptDialog({ open, onClose }: TimeoutRevi
             </div>
             {rating > 0 && (
               <p className="text-center text-sm text-muted-foreground">
-                {rating === 5 && 'Excellent!'}
-                {rating === 4 && 'Very Good!'}
-                {rating === 3 && 'Good'}
-                {rating === 2 && 'Fair'}
-                {rating === 1 && 'Needs Improvement'}
+                {rating === 5 && "Excellent!"}
+                {rating === 4 && "Very Good!"}
+                {rating === 3 && "Good"}
+                {rating === 2 && "Fair"}
+                {rating === 1 && "Needs Improvement"}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="feedback">Any suggestions or complaints? (Optional)</Label>
+            <Label htmlFor="feedback">
+              Any suggestions or complaints? (Optional)
+            </Label>
             <Textarea
               id="feedback"
               placeholder="Share your thoughts, suggestions, or any issues you encountered..."
@@ -126,12 +132,17 @@ export default function TimeoutReviewPromptDialog({ open, onClose }: TimeoutRevi
 
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
             <p className="text-xs text-muted-foreground">
-              Your feedback helps us improve our service. Thank you for taking the time to share your thoughts!
+              Your feedback helps us improve our service. Thank you for taking
+              the time to share your thoughts!
             </p>
           </div>
         </div>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={handleDismiss} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={handleDismiss}
+            disabled={isSubmitting}
+          >
             Skip
           </Button>
           <Button
@@ -139,7 +150,7 @@ export default function TimeoutReviewPromptDialog({ open, onClose }: TimeoutRevi
             disabled={isSubmitting || rating === 0}
             className="gradient-saffron-gold text-white"
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+            {isSubmitting ? "Submitting..." : "Submit Feedback"}
           </Button>
         </DialogFooter>
       </DialogContent>

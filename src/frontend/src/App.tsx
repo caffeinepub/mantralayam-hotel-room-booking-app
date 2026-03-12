@@ -1,29 +1,40 @@
-import { useEffect, useState } from 'react';
-import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@/components/ui/sonner';
-import { InternetIdentityProvider } from './hooks/useInternetIdentity';
-import { LanguageProvider } from './components/LanguageProvider';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import HelpFAQWidget from './components/HelpFAQWidget';
-import TimeoutReviewPromptDialog from './components/TimeoutReviewPromptDialog';
-import OfflineIndicator from './components/OfflineIndicator';
-import RouteTransition from './components/RouteTransition';
-import HomePage from './pages/HomePage';
-import BrowseRoomsPage from './pages/BrowseRoomsPage';
-import RoomDetailPage from './pages/RoomDetailPage';
-import BookingPage from './pages/BookingPage';
-import BookingConfirmationPage from './pages/BookingConfirmationPage';
-import MyBookingsPage from './pages/MyBookingsPage';
-import AdminAppPage from './pages/AdminAppPage';
-import PartnerLoginPage from './pages/PartnerLoginPage';
-import PartnerDashboardPage from './pages/PartnerDashboardPage';
-import CustomerLoginPage from './pages/CustomerLoginPage';
-import DownloadCenterPage from './pages/DownloadCenterPage';
-import { initializeStorage, updateAnalytics, getCustomerSession, clearCustomerSession } from './lib/dataStorage';
-import { useInactivityTimeout } from './hooks/useInactivityTimeout';
+import { Toaster } from "@/components/ui/sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Outlet,
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
+import { ThemeProvider } from "next-themes";
+import { useEffect, useState } from "react";
+import Footer from "./components/Footer";
+import Header from "./components/Header";
+import HelpFAQWidget from "./components/HelpFAQWidget";
+import { LanguageProvider } from "./components/LanguageProvider";
+import OfflineIndicator from "./components/OfflineIndicator";
+import RouteTransition from "./components/RouteTransition";
+import TimeoutReviewPromptDialog from "./components/TimeoutReviewPromptDialog";
+import { useInactivityTimeout } from "./hooks/useInactivityTimeout";
+import { InternetIdentityProvider } from "./hooks/useInternetIdentity";
+import {
+  clearCustomerSession,
+  getCustomerSession,
+  initializeStorage,
+  updateAnalytics,
+} from "./lib/dataStorage";
+import AdminAppPage from "./pages/AdminAppPage";
+import BookingConfirmationPage from "./pages/BookingConfirmationPage";
+import BookingPage from "./pages/BookingPage";
+import BrowseRoomsPage from "./pages/BrowseRoomsPage";
+import CustomerLoginPage from "./pages/CustomerLoginPage";
+import DownloadCenterPage from "./pages/DownloadCenterPage";
+import HomePage from "./pages/HomePage";
+import MyBookingsPage from "./pages/MyBookingsPage";
+import PartnerDashboardPage from "./pages/PartnerDashboardPage";
+import PartnerLoginPage from "./pages/PartnerLoginPage";
+import RoomDetailPage from "./pages/RoomDetailPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,67 +87,67 @@ const rootRoute = createRootRoute({
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: HomePage,
 });
 
 const browseRoomsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/browse-rooms',
+  path: "/browse-rooms",
   component: BrowseRoomsPage,
 });
 
 const roomDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/room/$roomId',
+  path: "/room/$roomId",
   component: RoomDetailPage,
 });
 
 const bookingRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/booking/$roomId',
+  path: "/booking/$roomId",
   component: BookingPage,
 });
 
 const confirmationRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/confirmation/$bookingId',
+  path: "/confirmation/$bookingId",
   component: BookingConfirmationPage,
 });
 
 const myBookingsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/my-bookings',
+  path: "/my-bookings",
   component: MyBookingsPage,
 });
 
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/admin',
+  path: "/admin",
   component: AdminAppPage,
 });
 
 const partnerLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/partner-login',
+  path: "/partner-login",
   component: PartnerLoginPage,
 });
 
 const partnerDashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/partner-dashboard',
+  path: "/partner-dashboard",
   component: PartnerDashboardPage,
 });
 
 const customerLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/customer-login',
+  path: "/customer-login",
   component: CustomerLoginPage,
 });
 
 const downloadCenterRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/download-center',
+  path: "/download-center",
   component: DownloadCenterPage,
 });
 
@@ -154,12 +165,12 @@ const routeTree = rootRoute.addChildren([
   downloadCenterRoute,
 ]);
 
-const router = createRouter({ 
+const router = createRouter({
   routeTree,
-  defaultPreload: 'intent',
+  defaultPreload: "intent",
 });
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }
@@ -168,16 +179,20 @@ declare module '@tanstack/react-router' {
 export default function App() {
   useEffect(() => {
     // Complete system reset and initialization with Schema v4.3
-    console.log('=== Mantralayam HomeStay Booking System ===');
-    console.log('Initializing with Schema v4.3 - Per-room capacity & multilingual support');
-    console.log('Features: Help/FAQ, Inactivity timeout, Issue reporting, Language switching');
+    console.log("=== Mantralayam HomeStay Booking System ===");
+    console.log(
+      "Initializing with Schema v4.3 - Per-room capacity & multilingual support",
+    );
+    console.log(
+      "Features: Help/FAQ, Inactivity timeout, Issue reporting, Language switching",
+    );
     initializeStorage();
 
     // Track visitor once per session
-    const hasTrackedVisit = sessionStorage.getItem('visitorTracked');
+    const hasTrackedVisit = sessionStorage.getItem("visitorTracked");
     if (!hasTrackedVisit) {
-      updateAnalytics('visitors');
-      sessionStorage.setItem('visitorTracked', 'true');
+      updateAnalytics("visitors");
+      sessionStorage.setItem("visitorTracked", "true");
     }
   }, []);
 

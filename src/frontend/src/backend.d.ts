@@ -58,12 +58,13 @@ export interface http_request_result {
     body: Uint8Array;
     headers: Array<http_header>;
 }
-export interface AdminProfile {
+export interface TempleSpecial {
     id: string;
-    adminKey: string;
+    date: string;
     name: string;
-    role: UserRole;
-    adminPassword: string;
+    description: string;
+    image: ExternalBlob;
+    price: bigint;
 }
 export interface ShoppingItem {
     productName: string;
@@ -71,6 +72,13 @@ export interface ShoppingItem {
     quantity: bigint;
     priceInCents: bigint;
     productDescription: string;
+}
+export interface AdminProfile {
+    id: string;
+    adminKey: string;
+    name: string;
+    role: UserRole;
+    adminPassword: string;
 }
 export interface Hotel {
     id: string;
@@ -100,6 +108,7 @@ export interface GuestProfile {
 export interface PartnerProfile {
     id: string;
     contact: string;
+    password: string;
     name: string;
     registrationDate: Time;
     rooms: Array<string>;
@@ -165,9 +174,11 @@ export enum Variant_profileUpdate_booking_newLogin_partner_payment {
 export interface backendInterface {
     addHomeStayWithOptionalPasscode(homeStay: HomeStay, passcode: string | null): Promise<void>;
     addHotel(hotel: Hotel): Promise<void>;
+    addTempleSpecial(special: TempleSpecial): Promise<void>;
+    adminUpdatePartnerProfile(profile: PartnerProfile): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     authenticateAdmin(key: string, password: string): Promise<boolean>;
-    authenticatePartnerWithPasscode(passcode: string): Promise<string>;
+    authenticatePartnerWithPassword(password: string): Promise<boolean>;
     cancelBooking(bookingId: string): Promise<void>;
     checkAdminAuthentication(): Promise<boolean>;
     checkPartnerAuthentication(): Promise<boolean>;
@@ -183,6 +194,7 @@ export interface backendInterface {
     getAllBookings(): Promise<Array<Booking>>;
     getAllPartnerProfiles(): Promise<Array<PartnerProfile>>;
     getAllRoomPasscodes(): Promise<Array<RoomPasscodeConfig>>;
+    getAuthenticatedPartnerId(): Promise<string | null>;
     getAvailableHomeStays(): Promise<Array<HomeStay>>;
     getAvailableHotels(): Promise<Array<Hotel>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -194,12 +206,12 @@ export interface backendInterface {
     getHotels(): Promise<Array<Hotel>>;
     getMyBookings(): Promise<Array<Booking>>;
     getNotifications(): Promise<Array<Notification>>;
-    getPartnerAuthenticatedRoomId(): Promise<string | null>;
     getPartnerNotifications(partnerId: string): Promise<Array<Notification>>;
     getPartnerProfile(partnerId: string): Promise<PartnerProfile | null>;
     getPartnerRooms(partnerId: string): Promise<Array<HomeStay>>;
     getRoomPasscode(roomId: string): Promise<string | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
+    getTempleSpecials(): Promise<Array<TempleSpecial>>;
     getUnreadNotifications(): Promise<Array<Notification>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     hasCustomerLoggedInBefore(): Promise<boolean>;

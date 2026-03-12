@@ -3,7 +3,7 @@
 export interface Issue {
   id: string;
   bookingReference?: string;
-  category: 'booking' | 'payment' | 'property' | 'service' | 'other';
+  category: "booking" | "payment" | "property" | "service" | "other";
   description: string;
   contactName: string;
   contactPhone: string;
@@ -11,10 +11,10 @@ export interface Issue {
   homeStayName?: string;
   partnerId?: string;
   timestamp: number;
-  status: 'open' | 'resolved';
+  status: "open" | "resolved";
 }
 
-const ISSUES_KEY = 'mantralayam_issues';
+const ISSUES_KEY = "mantralayam_issues";
 
 export function loadIssues(): Issue[] {
   try {
@@ -22,7 +22,7 @@ export function loadIssues(): Issue[] {
     if (!stored) return [];
     return JSON.parse(stored);
   } catch (error) {
-    console.error('Error loading issues:', error);
+    console.error("Error loading issues:", error);
     return [];
   }
 }
@@ -30,18 +30,20 @@ export function loadIssues(): Issue[] {
 function saveIssues(issues: Issue[]): void {
   try {
     localStorage.setItem(ISSUES_KEY, JSON.stringify(issues));
-    window.dispatchEvent(new Event('issuesUpdated'));
+    window.dispatchEvent(new Event("issuesUpdated"));
   } catch (error) {
-    console.error('Error saving issues:', error);
+    console.error("Error saving issues:", error);
   }
 }
 
-export function createIssue(issue: Omit<Issue, 'id' | 'timestamp' | 'status'>): Issue {
+export function createIssue(
+  issue: Omit<Issue, "id" | "timestamp" | "status">,
+): Issue {
   const newIssue: Issue = {
     ...issue,
     id: `issue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     timestamp: Date.now(),
-    status: 'open',
+    status: "open",
   };
 
   const issues = loadIssues();
@@ -51,16 +53,19 @@ export function createIssue(issue: Omit<Issue, 'id' | 'timestamp' | 'status'>): 
   return newIssue;
 }
 
-export function updateIssueStatus(issueId: string, status: 'open' | 'resolved'): void {
+export function updateIssueStatus(
+  issueId: string,
+  status: "open" | "resolved",
+): void {
   const issues = loadIssues();
-  const updated = issues.map(issue =>
-    issue.id === issueId ? { ...issue, status } : issue
+  const updated = issues.map((issue) =>
+    issue.id === issueId ? { ...issue, status } : issue,
   );
   saveIssues(updated);
 }
 
 export function deleteIssue(issueId: string): void {
   const issues = loadIssues();
-  const filtered = issues.filter(issue => issue.id !== issueId);
+  const filtered = issues.filter((issue) => issue.id !== issueId);
   saveIssues(filtered);
 }

@@ -1,6 +1,19 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Download, FileCode, Folder, Package, Terminal, CheckCircle2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  CheckCircle2,
+  Download,
+  FileCode,
+  Folder,
+  Package,
+  Terminal,
+} from "lucide-react";
 
 export default function DownloadCenterPage() {
   return (
@@ -16,7 +29,8 @@ export default function DownloadCenterPage() {
             Download Center
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Access the complete Mantralayam Room Booking System source code and documentation
+            Access the complete Mantralayam Room Booking System source code and
+            documentation
           </p>
         </div>
 
@@ -28,7 +42,8 @@ export default function DownloadCenterPage() {
               Project Overview
             </CardTitle>
             <CardDescription>
-              Complete frontend-only booking system with localStorage persistence
+              Complete frontend-only booking system with localStorage
+              persistence
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -130,7 +145,10 @@ export default function DownloadCenterPage() {
                 <div className="flex-1 space-y-2">
                   <h4 className="font-semibold">Access Application</h4>
                   <p className="text-sm text-muted-foreground">
-                    Open browser to <code className="bg-muted px-2 py-1 rounded">http://localhost:3000</code>
+                    Open browser to{" "}
+                    <code className="bg-muted px-2 py-1 rounded">
+                      http://localhost:3000
+                    </code>
                   </p>
                 </div>
               </div>
@@ -142,7 +160,10 @@ export default function DownloadCenterPage() {
                 <div className="flex-1 space-y-2">
                   <h4 className="font-semibold">Admin Access</h4>
                   <p className="text-sm text-muted-foreground">
-                    Use password: <code className="bg-muted px-2 py-1 rounded font-semibold">VBGRA@1733s</code>
+                    Use password:{" "}
+                    <code className="bg-muted px-2 py-1 rounded font-semibold">
+                      VBGRA@1733s
+                    </code>
                   </p>
                 </div>
               </div>
@@ -157,14 +178,14 @@ export default function DownloadCenterPage() {
               <CheckCircle2 className="h-5 w-5 text-primary" />
               Implemented Features
             </CardTitle>
-            <CardDescription>
-              Complete feature set ready to use
-            </CardDescription>
+            <CardDescription>Complete feature set ready to use</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <h4 className="font-semibold text-sm mb-3">Customer Features</h4>
+                <h4 className="font-semibold text-sm mb-3">
+                  Customer Features
+                </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -222,7 +243,9 @@ export default function DownloadCenterPage() {
           <Button
             size="lg"
             className="gradient-saffron-gold text-white border-0 hover:opacity-90 gap-2 shadow-saffron-lg px-8 py-6 text-lg"
-            onClick={() => window.alert('Source code is available in your project directory')}
+            onClick={() =>
+              window.alert("Source code is available in your project directory")
+            }
           >
             <FileCode className="h-5 w-5" />
             View Source Code

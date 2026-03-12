@@ -1,94 +1,134 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Bell, CheckCircle, CreditCard, UserPlus, Building2, AlertCircle, LogIn, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useGetNotifications } from '../../hooks/useQueries';
-import { Variant_profileUpdate_booking_newLogin_partner_payment } from '../../backend';
-import { toast } from 'sonner';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  loadPermanentNotifications,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  AlertCircle,
+  Bell,
+  Building2,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  CreditCard,
+  LogIn,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import type { Variant_profileUpdate_booking_newLogin_partner_payment } from "../../backend";
+import { useGetNotifications } from "../../hooks/useQueries";
+import {
+  type PermanentNotification,
   addPermanentNotification,
-  deletePermanentNotification,
   deleteCategoryNotifications,
-  PermanentNotification,
-} from '../../lib/notificationStorage';
+  deletePermanentNotification,
+  loadPermanentNotifications,
+} from "../../lib/notificationStorage";
 
-type NotificationCategory = 'partner' | 'bookings' | 'payments' | 'logins' | 'issues';
+type NotificationCategory =
+  | "partner"
+  | "bookings"
+  | "payments"
+  | "logins"
+  | "issues";
 
 export default function NotificationPanel() {
-  const { data: backendNotifications = [], isLoading, refetch } = useGetNotifications();
-  const [permanentNotifications, setPermanentNotifications] = useState<PermanentNotification[]>([]);
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    bookings: true,
-    payments: true,
-    partner: true,
-    logins: true,
-    issues: true,
-  });
+  const {
+    data: backendNotifications = [],
+    isLoading,
+    refetch,
+  } = useGetNotifications();
+  const [permanentNotifications, setPermanentNotifications] = useState<
+    PermanentNotification[]
+  >([]);
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(
+    {
+      bookings: true,
+      payments: true,
+      partner: true,
+      logins: true,
+      issues: true,
+    },
+  );
 
   // Load permanent notifications from storage
   const refreshNotifications = () => {
     setPermanentNotifications(loadPermanentNotifications());
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshNotifications is stable
   useEffect(() => {
     refreshNotifications();
   }, []);
 
   // Sync backend notifications to permanent storage
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshNotifications is stable
   useEffect(() => {
     if (backendNotifications.length > 0) {
-      backendNotifications.forEach(n => {
+      // biome-ignore lint/complexity/noForEach: forEach is intentional here
+      for (const n of backendNotifications) {
         const category = mapNotificationType(n.notificationType);
         addPermanentNotification(
           n.message,
           category as NotificationCategory,
           n.notificationType,
           n.id,
-          Number(n.timestamp)
+          Number(n.timestamp),
         );
-      });
+      }
       refreshNotifications();
     }
   }, [backendNotifications]);
 
   // Listen for storage events - fixed to listen to correct events
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshNotifications is stable
   useEffect(() => {
     const handleStorageUpdate = () => {
       refreshNotifications();
     };
 
     // Listen to all notification storage events
-    window.addEventListener('notificationsUpdated', handleStorageUpdate);
-    window.addEventListener('newNotification', handleStorageUpdate);
-    window.addEventListener('notificationAdded', handleStorageUpdate);
-    window.addEventListener('notificationDeleted', handleStorageUpdate);
+    window.addEventListener("notificationsUpdated", handleStorageUpdate);
+    window.addEventListener("newNotification", handleStorageUpdate);
+    window.addEventListener("notificationAdded", handleStorageUpdate);
+    window.addEventListener("notificationDeleted", handleStorageUpdate);
 
     return () => {
-      window.removeEventListener('notificationsUpdated', handleStorageUpdate);
-      window.removeEventListener('newNotification', handleStorageUpdate);
-      window.removeEventListener('notificationAdded', handleStorageUpdate);
-      window.removeEventListener('notificationDeleted', handleStorageUpdate);
+      window.removeEventListener("notificationsUpdated", handleStorageUpdate);
+      window.removeEventListener("newNotification", handleStorageUpdate);
+      window.removeEventListener("notificationAdded", handleStorageUpdate);
+      window.removeEventListener("notificationDeleted", handleStorageUpdate);
     };
   }, []);
 
-  const mapNotificationType = (type: Variant_profileUpdate_booking_newLogin_partner_payment): string => {
+  const mapNotificationType = (
+    type: Variant_profileUpdate_booking_newLogin_partner_payment,
+  ): string => {
     switch (type) {
-      case 'booking': return 'bookings';
-      case 'payment': return 'payments';
-      case 'partner': return 'partner';
-      case 'newLogin': return 'logins';
-      case 'profileUpdate': return 'logins';
-      default: return 'bookings';
+      case "booking":
+        return "bookings";
+      case "payment":
+        return "payments";
+      case "partner":
+        return "partner";
+      case "newLogin":
+        return "logins";
+      case "profileUpdate":
+        return "logins";
+      default:
+        return "bookings";
     }
   };
 
   const handleDelete = (id: string) => {
     deletePermanentNotification(id);
-    toast.success('Notification deleted');
+    toast.success("Notification deleted");
     refreshNotifications();
   };
 
@@ -99,58 +139,87 @@ export default function NotificationPanel() {
   };
 
   const toggleCategory = (category: string) => {
-    setOpenCategories(prev => ({ ...prev, [category]: !prev[category] }));
+    setOpenCategories((prev) => ({ ...prev, [category]: !prev[category] }));
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'bookings': return <CheckCircle className="h-5 w-5" />;
-      case 'payments': return <CreditCard className="h-5 w-5" />;
-      case 'partner': return <Building2 className="h-5 w-5" />;
-      case 'logins': return <LogIn className="h-5 w-5" />;
-      case 'issues': return <AlertCircle className="h-5 w-5" />;
-      default: return <Bell className="h-5 w-5" />;
+      case "bookings":
+        return <CheckCircle className="h-5 w-5" />;
+      case "payments":
+        return <CreditCard className="h-5 w-5" />;
+      case "partner":
+        return <Building2 className="h-5 w-5" />;
+      case "logins":
+        return <LogIn className="h-5 w-5" />;
+      case "issues":
+        return <AlertCircle className="h-5 w-5" />;
+      default:
+        return <Bell className="h-5 w-5" />;
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'bookings': return 'text-green-600 dark:text-green-400';
-      case 'payments': return 'text-blue-600 dark:text-blue-400';
-      case 'partner': return 'text-purple-600 dark:text-purple-400';
-      case 'logins': return 'text-amber-600 dark:text-amber-400';
-      case 'issues': return 'text-red-600 dark:text-red-400';
-      default: return 'text-primary';
+      case "bookings":
+        return "text-green-600 dark:text-green-400";
+      case "payments":
+        return "text-blue-600 dark:text-blue-400";
+      case "partner":
+        return "text-purple-600 dark:text-purple-400";
+      case "logins":
+        return "text-amber-600 dark:text-amber-400";
+      case "issues":
+        return "text-red-600 dark:text-red-400";
+      default:
+        return "text-primary";
     }
   };
 
   const getCategoryBadgeColor = (category: string) => {
     switch (category) {
-      case 'bookings': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'payments': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'partner': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
-      case 'logins': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
-      case 'issues': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-      default: return 'bg-primary/10 text-primary';
+      case "bookings":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+      case "payments":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      case "partner":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
+      case "logins":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      case "issues":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+      default:
+        return "bg-primary/10 text-primary";
     }
   };
 
   const getCategoryBorderColor = (category: string) => {
     switch (category) {
-      case 'issues': return 'border-l-4 border-l-red-500';
-      default: return '';
+      case "issues":
+        return "border-l-4 border-l-red-500";
+      default:
+        return "";
     }
   };
 
-  const groupedNotifications = permanentNotifications.reduce((acc, notif) => {
-    if (!acc[notif.category]) {
-      acc[notif.category] = [];
-    }
-    acc[notif.category].push(notif);
-    return acc;
-  }, {} as Record<string, PermanentNotification[]>);
+  const groupedNotifications = permanentNotifications.reduce(
+    (acc, notif) => {
+      if (!acc[notif.category]) {
+        acc[notif.category] = [];
+      }
+      acc[notif.category].push(notif);
+      return acc;
+    },
+    {} as Record<string, PermanentNotification[]>,
+  );
 
-  const categories: NotificationCategory[] = ['bookings', 'payments', 'partner', 'logins', 'issues'];
+  const categories: NotificationCategory[] = [
+    "bookings",
+    "payments",
+    "partner",
+    "logins",
+    "issues",
+  ];
 
   if (isLoading) {
     return (
@@ -191,7 +260,7 @@ export default function NotificationPanel() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {categories.map(category => {
+          {categories.map((category) => {
             const categoryNotifications = groupedNotifications[category] || [];
             if (categoryNotifications.length === 0) return null;
 
@@ -209,9 +278,12 @@ export default function NotificationPanel() {
                             {getCategoryIcon(category)}
                           </div>
                           <div>
-                            <CardTitle className="text-lg capitalize">{category}</CardTitle>
+                            <CardTitle className="text-lg capitalize">
+                              {category}
+                            </CardTitle>
                             <p className="text-sm text-muted-foreground">
-                              {categoryNotifications.length} notification{categoryNotifications.length !== 1 ? 's' : ''}
+                              {categoryNotifications.length} notification
+                              {categoryNotifications.length !== 1 ? "s" : ""}
                             </p>
                           </div>
                         </div>
@@ -251,11 +323,15 @@ export default function NotificationPanel() {
                                   {notification.message}
                                 </AlertDescription>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {new Date(notification.timestamp).toLocaleString()}
+                                  {new Date(
+                                    notification.timestamp,
+                                  ).toLocaleString()}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                <Badge className={getCategoryBadgeColor(category)}>
+                                <Badge
+                                  className={getCategoryBadgeColor(category)}
+                                >
                                   {category}
                                 </Badge>
                                 <Button

@@ -11,7 +11,7 @@ export interface AnalyticsData {
   payments: number;
 }
 
-const ANALYTICS_KEY = 'mantralayam_analytics';
+const ANALYTICS_KEY = "mantralayam_analytics";
 
 export function getAnalytics(): AnalyticsData {
   try {
@@ -29,7 +29,7 @@ export function getAnalytics(): AnalyticsData {
     }
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error reading analytics:', error);
+    console.error("Error reading analytics:", error);
     return {
       visitors: 0,
       bookings: 0,
@@ -45,41 +45,41 @@ export function getAnalytics(): AnalyticsData {
 export function saveAnalytics(analytics: AnalyticsData) {
   try {
     localStorage.setItem(ANALYTICS_KEY, JSON.stringify(analytics));
-    window.dispatchEvent(new Event('analyticsUpdated'));
+    window.dispatchEvent(new Event("analyticsUpdated"));
   } catch (error) {
-    console.error('Error saving analytics:', error);
+    console.error("Error saving analytics:", error);
   }
 }
 
-export function updateAnalytics(field: keyof AnalyticsData, increment: number = 1) {
+export function updateAnalytics(field: keyof AnalyticsData, increment = 1) {
   try {
     const analytics = getAnalytics();
     analytics[field] = (analytics[field] as number) + increment;
     saveAnalytics(analytics);
   } catch (error) {
-    console.error('Error updating analytics:', error);
+    console.error("Error updating analytics:", error);
   }
 }
 
 export function trackHomeStayView() {
-  updateAnalytics('homeStayViews');
+  updateAnalytics("homeStayViews");
 }
 
 export function trackBooking(revenue: number) {
-  updateAnalytics('bookings');
+  updateAnalytics("bookings");
   const analytics = getAnalytics();
   analytics.revenue += revenue;
   saveAnalytics(analytics);
 }
 
 export function trackPayment() {
-  updateAnalytics('payments');
+  updateAnalytics("payments");
 }
 
 export function trackCustomerLogin() {
-  updateAnalytics('customerLogins');
+  updateAnalytics("customerLogins");
 }
 
 export function trackPartnerEdit() {
-  updateAnalytics('partnerEdits');
+  updateAnalytics("partnerEdits");
 }

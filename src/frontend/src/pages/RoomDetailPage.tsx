@@ -1,257 +1,304 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from '@tanstack/react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, Users, Bed, Calendar, ArrowRight, Phone, MessageSquare, ExternalLink } from 'lucide-react';
-import { toast } from 'sonner';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { getHomeStays, getHotels, type HomeStay, getHomeStayDisplayPrice, getAverageRating, getCustomerSession, getHomeStayBookingStats } from '../lib/dataStorage';
-import CustomerInfoModal from '../components/CustomerInfoModal';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import {
+  Car,
+  ChevronLeft,
+  ChevronRight,
+  Coffee,
+  Home,
+  MapPin,
+  Phone,
+  RefreshCw,
+  Star,
+  Tv,
+  Utensils,
+  Wifi,
+  Wind,
+} from "lucide-react";
+import type React from "react";
+import { useState } from "react";
+import { useGetHomeStayDetails } from "../hooks/useQueries";
+
+const amenityIcons: Record<string, React.ReactNode> = {
+  WiFi: <Wifi className="w-4 h-4" />,
+  Parking: <Car className="w-4 h-4" />,
+  Breakfast: <Coffee className="w-4 h-4" />,
+  Restaurant: <Utensils className="w-4 h-4" />,
+  AC: <Wind className="w-4 h-4" />,
+  TV: <Tv className="w-4 h-4" />,
+};
+
+function DetailSkeleton() {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <Skeleton className="w-full h-80 rounded-2xl" />
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-2/3" />
+        <Skeleton className="h-5 w-1/3" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+      </div>
+    </div>
+  );
+}
 
 export default function RoomDetailPage() {
+  const { roomId } = useParams({ from: "/room/$roomId" });
   const navigate = useNavigate();
-  const { roomId } = useParams({ from: '/room/$roomId' });
-  const [homeStay, setHomeStay] = useState<HomeStay | null>(null);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [photoIndex, setPhotoIndex] = useState(0);
 
-  useEffect(() => {
-    const session = getCustomerSession();
-    if (!session || !session.verified) {
-      toast.error('Please provide your details first');
-      navigate({ to: '/browse-rooms' });
-      return;
-    }
+  const {
+    data: room,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetHomeStayDetails(roomId);
 
-    const homeStays = getHomeStays();
-    const found = homeStays.find(h => h.id === roomId);
-    
-    if (!found) {
-      toast.error('Homestay not found');
-      navigate({ to: '/browse-rooms' });
-      return;
-    }
+  const photos: string[] = [
+    ...(room?.photoUrls ?? []),
+    ...(room?.photos?.map((p) => p.getDirectURL()) ?? []),
+  ].filter(Boolean);
 
-    setHomeStay(found);
-  }, [roomId, navigate]);
+  if (photos.length === 0) {
+    photos.push("/assets/generated/standard-room.dim_800x600.jpg");
+  }
 
-  const handleBookNow = () => {
-    if (!homeStay) return;
-    
-    const stats = getHomeStayBookingStats(homeStay.id);
-    if (stats.availableRooms === 0) {
-      toast.error('No rooms available at the moment');
-      return;
-    }
+  const prevPhoto = () =>
+    setPhotoIndex((i) => (i - 1 + photos.length) % photos.length);
+  const nextPhoto = () => setPhotoIndex((i) => (i + 1) % photos.length);
 
-    navigate({ to: '/booking/$roomId', params: { roomId: homeStay.id } });
-  };
+  const avgRating =
+    room && room.ratings.length > 0
+      ? (
+          room.ratings.reduce((a, b) => a + Number(b), 0) / room.ratings.length
+        ).toFixed(1)
+      : null;
 
-  if (!homeStay) {
+  if (isLoading) return <DetailSkeleton />;
+
+  if (isError) {
     return (
-      <div className="container py-16 text-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
+        <p className="text-destructive text-lg">Failed to load room details.</p>
+        <Button onClick={() => refetch()} variant="outline">
+          <RefreshCw className="w-4 h-4 mr-2" /> Retry
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => navigate({ to: "/browse-rooms" })}
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" /> Back to Browse
+        </Button>
       </div>
     );
   }
 
-  const stats = getHomeStayBookingStats(homeStay.id);
-  const allMedia = [...homeStay.photoUrls, ...homeStay.videoUrls];
-  const avgRating = getAverageRating(homeStay.ratings);
+  if (!room) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
+        <Home className="w-16 h-16 text-muted-foreground" />
+        <h2 className="text-2xl font-semibold text-foreground">
+          Room Not Found
+        </h2>
+        <p className="text-muted-foreground text-center max-w-sm">
+          This room may have been removed or is no longer available.
+        </p>
+        <Button onClick={() => navigate({ to: "/browse-rooms" })}>
+          Browse All Rooms
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="container py-8 animate-fade-in">
-      <div className="max-w-6xl mx-auto">
-        {/* Media Carousel */}
-        <div className="mb-8">
-          <Carousel className="w-full">
-            <CarouselContent>
-              {allMedia.map((url, index) => (
-                <CarouselItem key={index}>
-                  <div className="relative aspect-video rounded-lg overflow-hidden">
-                    {url.includes('youtube.com') || url.includes('youtu.be') || url.endsWith('.mp4') ? (
-                      <video
-                        src={url}
-                        controls
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={url}
-                        alt={`${homeStay.name} - ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            {allMedia.length > 1 && (
-              <>
-                <CarouselPrevious className="left-4" />
-                <CarouselNext className="right-4" />
-              </>
-            )}
-          </Carousel>
-        </div>
+    <main className="min-h-screen bg-background pb-16">
+      {/* Back button */}
+      <div className="max-w-4xl mx-auto px-4 pt-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate({ to: "/browse-rooms" })}
+          className="mb-4 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" /> Back to Browse
+        </Button>
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="glass-card shadow-saffron">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-3xl mb-2">{homeStay.name}</CardTitle>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-3">
-                      <MapPin className="h-4 w-4" />
-                      <span>{homeStay.distanceFromTemple} km from temple</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                      <span className="font-semibold">{avgRating}</span>
-                      <span className="text-muted-foreground">({homeStay.ratings.length} reviews)</span>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Description</h3>
-                  <p className="text-muted-foreground">{homeStay.description}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                    <Bed className="h-5 w-5 text-primary" />
-                    Room Availability
-                  </h3>
-                  <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Available Rooms</span>
-                      <Badge className={stats.availableRooms > 0 ? 'gradient-saffron-gold text-white border-0' : 'bg-destructive text-white'}>
-                        {stats.availableRooms} / {stats.totalRooms}
-                      </Badge>
-                    </div>
-                    {stats.availableRooms === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        All rooms are currently booked. Please check back later.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Amenities</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {homeStay.amenities.map((amenity, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-sm">
-                        {amenity}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {homeStay.ownerMessage && (
-                  <div>
-                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-primary" />
-                      Message from Owner
-                    </h3>
-                    <div className="p-4 rounded-lg bg-muted/50 border">
-                      <p className="text-muted-foreground italic">{homeStay.ownerMessage}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                    <Phone className="h-5 w-5 text-primary" />
-                    Contact Information
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Partner:</span>
-                      <span className="font-medium">{homeStay.partnerName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <a href={`tel:${homeStay.partnerPhoneNumber}`} className="font-medium text-primary hover:underline">
-                        {homeStay.partnerPhoneNumber}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                {homeStay.googleMapsLink && (
-                  <div>
-                    <Button
-                      onClick={() => window.open(homeStay.googleMapsLink, '_blank')}
-                      variant="outline"
-                      className="gap-2"
-                    >
-                      <MapPin className="h-4 w-4" />
-                      View on Google Maps
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Booking Card */}
-          <div className="lg:col-span-1">
-            <Card className="glass-card shadow-saffron sticky top-24">
-              <CardHeader>
-                <CardTitle>Book Your Stay</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">12-hour stay</p>
-                  <p className="text-3xl font-bold text-primary">
-                    {getHomeStayDisplayPrice(homeStay)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">per room</p>
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Bed className="h-4 w-4 text-muted-foreground" />
-                    <span>{homeStay.roomCount} total rooms</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>12-hour duration</span>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleBookNow}
-                  disabled={stats.availableRooms === 0}
-                  className="w-full gradient-saffron-gold text-white border-0 hover:opacity-90 gap-2"
-                  size="lg"
-                >
-                  {stats.availableRooms === 0 ? 'Fully Booked' : 'Book Now'}
-                  {stats.availableRooms > 0 && <ArrowRight className="h-4 w-4" />}
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  Free cancellation up to 24 hours before check-in
-                </p>
-              </CardContent>
-            </Card>
+      {/* Photo carousel */}
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="relative rounded-2xl overflow-hidden bg-muted">
+          <img
+            src={photos[photoIndex]}
+            alt={`Room view ${photoIndex + 1}`}
+            className="w-full h-80 md:h-[420px] object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src =
+                "/assets/generated/standard-room.dim_800x600.jpg";
+            }}
+          />
+          {photos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={prevPhoto}
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={nextPhoto}
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {photos.map((photo, i) => (
+                  <button
+                    type="button"
+                    key={photo || i}
+                    onClick={() => setPhotoIndex(i)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      i === photoIndex ? "bg-white" : "bg-white/50"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+          <div className="absolute top-4 left-4">
+            <Badge
+              variant={room.availability ? "default" : "secondary"}
+              className={
+                room.availability ? "bg-primary text-primary-foreground" : ""
+              }
+            >
+              {room.availability ? "Available" : "Unavailable"}
+            </Badge>
           </div>
         </div>
       </div>
 
-      <CustomerInfoModal
-        isOpen={showCustomerModal}
-        onClose={() => setShowCustomerModal(false)}
-        onSubmit={(name, phone) => {
-          setShowCustomerModal(false);
-        }}
-      />
-    </div>
+      {/* Details */}
+      <div className="max-w-4xl mx-auto px-4 mt-6 grid md:grid-cols-3 gap-6">
+        {/* Main info */}
+        <div className="md:col-span-2 space-y-5">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-3xl font-bold text-foreground">
+                {room.partnerName || "Homestay"}
+              </h1>
+              {avgRating && (
+                <div className="flex items-center gap-1 bg-muted px-3 py-1 rounded-full shrink-0">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold text-sm">{avgRating}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({room.ratings.length})
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Badge variant="outline" className="capitalize">
+                {room.roomType}
+              </Badge>
+              {room.distanceFromTemple != null && (
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  {Number(room.distanceFromTemple)} m from temple
+                </span>
+              )}
+            </div>
+          </div>
+
+          <p className="text-muted-foreground leading-relaxed">
+            {room.description}
+          </p>
+
+          {room.ownerMessage && (
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+              <p className="text-sm font-medium text-primary mb-1">
+                Message from Owner
+              </p>
+              <p className="text-sm text-foreground">{room.ownerMessage}</p>
+            </div>
+          )}
+
+          {/* Amenities */}
+          {room.amenities.length > 0 && (
+            <div>
+              <h2 className="font-semibold text-foreground mb-3">Amenities</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {room.amenities.map((amenity) => (
+                  <div
+                    key={amenity}
+                    className="flex items-center gap-2 bg-muted rounded-lg px-3 py-2 text-sm"
+                  >
+                    <span className="text-primary">
+                      {amenityIcons[amenity] || null}
+                    </span>
+                    {amenity}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Google Maps */}
+          {room.googleMapsLink && (
+            <div>
+              <h2 className="font-semibold text-foreground mb-2">Location</h2>
+              <a
+                href={room.googleMapsLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
+              >
+                <MapPin className="w-4 h-4" /> View on Google Maps
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Booking card */}
+        <div className="md:col-span-1">
+          <div className="sticky top-24 bg-card border border-border rounded-2xl p-5 shadow-saffron space-y-4">
+            <div>
+              <span className="text-3xl font-bold text-primary">
+                ₹{Number(room.price).toLocaleString()}
+              </span>
+              <span className="text-muted-foreground text-sm">/night</span>
+            </div>
+
+            {room.partnerPhoneNumber && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="w-4 h-4 text-primary" />
+                <span>{room.partnerPhoneNumber}</span>
+              </div>
+            )}
+
+            <Button
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={!room.availability}
+              onClick={() =>
+                navigate({
+                  to: "/booking/$roomId",
+                  params: { roomId: room.id },
+                })
+              }
+            >
+              {room.availability ? "Book Now" : "Not Available"}
+            </Button>
+
+            <p className="text-xs text-muted-foreground text-center">
+              No payment required upfront
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

@@ -1,264 +1,302 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Key, Lock, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  AlertCircle,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Key,
+  Loader2,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import type { RoomPasscodeConfig } from "../../backend";
+import { useActor } from "../../hooks/useActor";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getHomeStays, saveHomeStays, type HomeStay } from '../../lib/dataStorage';
+  clearPartnerAuthCache,
+  clearPartnerCachedData,
+  getRooms,
+  updateRoomPasscode,
+} from "../../lib/roomStorage";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 export default function PasscodeManagement() {
-  const [homeStays, setHomeStays] = useState<HomeStay[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedHomeStayId, setSelectedHomeStayId] = useState('');
-  const [newPasscode, setNewPasscode] = useState('');
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const [passcodes, setPasscodes] = useState<RoomPasscodeConfig[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [newRoomId, setNewRoomId] = useState("");
+  const [newPasscode, setNewPasscode] = useState("");
+  const [showPasscode, setShowPasscode] = useState(false);
+  const [deletingPasscode, setDeletingPasscode] = useState<string | null>(null);
+  const [addingPasscode, setAddingPasscode] = useState(false);
 
+  const loadPasscodes = async () => {
+    if (!actor) return;
+    setLoading(true);
+    try {
+      const data = await actor.getAllRoomPasscodes();
+      setPasscodes(data);
+    } catch (err) {
+      setError(`Failed to load passcodes: ${err}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadPasscodes is stable
   useEffect(() => {
-    loadHomeStays();
-    
-    const handleHomeStaysUpdated = () => {
-      loadHomeStays();
-    };
-    
-    window.addEventListener('homeStaysUpdated', handleHomeStaysUpdated);
-    return () => window.removeEventListener('homeStaysUpdated', handleHomeStaysUpdated);
-  }, []);
+    loadPasscodes();
+  }, [actor]);
 
-  const loadHomeStays = () => {
-    const allHomeStays = getHomeStays();
-    setHomeStays(allHomeStays);
-  };
-
-  const updateHomeStayPasscode = (homeStayId: string, passcode: string): boolean => {
-    const allHomeStays = getHomeStays();
-    const index = allHomeStays.findIndex(h => h.id === homeStayId);
-    
-    if (index === -1) return false;
-    
-    allHomeStays[index] = { ...allHomeStays[index], passcode };
-    saveHomeStays(allHomeStays);
-    return true;
-  };
-
-  const handleAddPasscode = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedHomeStayId || !newPasscode.trim()) {
-      toast.error('Please select a homestay and enter a passcode');
+  const handleAddPasscode = async () => {
+    if (!newRoomId.trim() || !newPasscode.trim()) {
+      setError("Room ID and passcode are required");
+      return;
+    }
+    if (!actor) {
+      setError("Actor not available");
       return;
     }
 
-    // Check if passcode already exists for a different homestay
-    const existingHomeStay = homeStays.find(h => h.passcode === newPasscode.trim() && h.id !== selectedHomeStayId);
-    if (existingHomeStay) {
-      toast.error(`This passcode is already in use for homestay: ${existingHomeStay.name}`);
-      return;
-    }
+    setAddingPasscode(true);
+    setError("");
+    setSuccess("");
 
     try {
-      const success = updateHomeStayPasscode(selectedHomeStayId, newPasscode.trim());
-      if (success) {
-        toast.success('Passcode configured successfully!');
-        setShowSuccessMessage(true);
-        setTimeout(() => setShowSuccessMessage(false), 5000);
-        setIsDialogOpen(false);
-        setSelectedHomeStayId('');
-        setNewPasscode('');
-      } else {
-        toast.error('HomeStay not found');
+      // Check for duplicate passcode in localStorage rooms
+      const rooms = getRooms();
+      const duplicate = rooms.find(
+        (r) =>
+          (r.passcode === newPasscode.trim() ||
+            r.password === newPasscode.trim()) &&
+          r.id !== newRoomId.trim(),
+      );
+      if (duplicate) {
+        setError(
+          `Passcode already in use for room: ${duplicate.name || duplicate.id}`,
+        );
+        return;
       }
-    } catch (error: any) {
-      console.error('Set passcode error:', error);
-      toast.error(error.message || 'Failed to set passcode');
+
+      // Set passcode in backend
+      await actor.setRoomPasscode(newRoomId.trim(), newPasscode.trim());
+
+      // Update localStorage
+      updateRoomPasscode(newRoomId.trim(), newPasscode.trim());
+
+      // Find the partner for this room and clear their auth cache
+      const room = rooms.find((r) => r.id === newRoomId.trim());
+      if (room?.partnerId) {
+        clearPartnerAuthCache(room.partnerId);
+      }
+      clearPartnerCachedData();
+
+      // Invalidate React Query caches
+      queryClient.invalidateQueries({ queryKey: ["roomPasscodes"] });
+      queryClient.invalidateQueries({ queryKey: ["allPartnerProfiles"] });
+      queryClient.invalidateQueries({ queryKey: ["partnerAuth"] });
+
+      setSuccess(
+        `✅ Passcode set for room ${newRoomId.trim()}. Partner can now log in with this passcode.`,
+      );
+      setNewRoomId("");
+      setNewPasscode("");
+      await loadPasscodes();
+    } catch (err: unknown) {
+      setError(
+        `Failed to set passcode: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setAddingPasscode(false);
     }
   };
 
-  const handleRemovePasscode = async (homeStayId: string) => {
-    const homeStay = homeStays.find(h => h.id === homeStayId);
-    if (!homeStay) return;
+  const handleDeletePasscode = async (passcode: string) => {
+    if (!actor) return;
+    if (!confirm("Remove this passcode?")) return;
 
-    if (!confirm(`Are you sure you want to remove the passcode for "${homeStay.name}"? The partner will lose access to their homestay.`)) {
-      return;
-    }
+    setDeletingPasscode(passcode);
+    setError("");
+    setSuccess("");
 
     try {
-      // Generate a new random passcode to replace the old one
-      const randomPasscode = `temp_${Date.now()}`;
-      const success = updateHomeStayPasscode(homeStayId, randomPasscode);
-      if (success) {
-        toast.success('Passcode removed successfully');
-      } else {
-        toast.error('Failed to remove passcode');
+      // Find which room this passcode belongs to and clear auth cache
+      const matchingConfig = passcodes.find((p) => p.passcode === passcode);
+      if (matchingConfig) {
+        const rooms = getRooms();
+        const room = rooms.find((r) => r.id === matchingConfig.roomId);
+        if (room?.partnerId) {
+          clearPartnerAuthCache(room.partnerId);
+        }
       }
-    } catch (error: any) {
-      console.error('Remove passcode error:', error);
-      toast.error('Failed to remove passcode');
-    }
-  };
 
-  const getHomeStayName = (homeStay: HomeStay) => {
-    return homeStay.name;
+      await actor.removeRoomPasscode(passcode);
+      clearPartnerCachedData();
+
+      queryClient.invalidateQueries({ queryKey: ["roomPasscodes"] });
+      queryClient.invalidateQueries({ queryKey: ["partnerAuth"] });
+
+      setSuccess("Passcode removed successfully");
+      await loadPasscodes();
+    } catch (err: unknown) {
+      setError(
+        `Failed to remove passcode: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setDeletingPasscode(null);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2 text-slate-100">
-            <Key className="h-6 w-6" />
-            Partner Passcode Management
-          </h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Configure passcodes for partner homestay access
-          </p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 gradient-saffron-gold text-white border-0 hover:opacity-90">
-              <Plus className="h-4 w-4" />
-              Update Passcode
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-slate-800 border-slate-700">
-            <DialogHeader>
-              <DialogTitle className="text-slate-100">Configure HomeStay Passcode</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddPasscode} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="homeStayId" className="text-slate-300">Select HomeStay</Label>
-                <Select value={selectedHomeStayId} onValueChange={setSelectedHomeStayId}>
-                  <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
-                    <SelectValue placeholder="Choose a homestay" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    {homeStays.length === 0 ? (
-                      <div className="p-2 text-sm text-slate-400">No homestays available</div>
-                    ) : (
-                      homeStays.map((homeStay) => (
-                        <SelectItem key={homeStay.id} value={homeStay.id} className="text-slate-100">
-                          {getHomeStayName(homeStay)} (Current: {homeStay.passcode || 'None'})
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="passcode" className="text-slate-300">New Passcode</Label>
-                <Input
-                  id="passcode"
-                  type="text"
-                  value={newPasscode}
-                  onChange={(e) => setNewPasscode(e.target.value)}
-                  placeholder="Enter a unique passcode"
-                  required
-                  className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                />
-                <p className="text-xs text-slate-500">
-                  This passcode will grant access to edit only this homestay
-                </p>
-              </div>
-
-              <Alert className="bg-slate-900 border-slate-700">
-                <Lock className="h-4 w-4 text-slate-400" />
-                <AlertDescription className="text-slate-300">
-                  Partners can use this passcode to log in and manage their homestay's price and availability.
-                </AlertDescription>
-              </Alert>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="bg-slate-900 border-slate-700 text-slate-300">
-                  Cancel
-                </Button>
-                <Button type="submit" className="gradient-saffron-gold text-white border-0 hover:opacity-90">
-                  Save Passcode
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Key className="w-5 h-5 text-primary" />
+        <h2 className="text-xl font-bold text-foreground">
+          Partner Passcode Management
+        </h2>
       </div>
 
-      {showSuccessMessage && (
-        <Alert className="bg-green-950 border-green-800">
-          <CheckCircle className="h-4 w-4 text-green-400" />
-          <AlertDescription className="text-green-300">
-            Passcode configured successfully! Partners can now use this passcode to access their homestay in the Partner Portal.
-          </AlertDescription>
-        </Alert>
+      <Card className="border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+        <CardContent className="p-4">
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            <strong>How it works:</strong> Set a passcode for a partner room
+            here. The partner uses this passcode to log in to their dashboard.
+            Passcodes are stored in the backend and take effect immediately — no
+            reload needed.
+          </p>
+        </CardContent>
+      </Card>
+
+      {success && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-sm">
+          <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{success}</span>
+        </div>
       )}
 
-      {homeStays.length === 0 ? (
-        <Card className="bg-slate-800 border-slate-700">
-          <CardContent className="py-12 text-center">
-            <Key className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-slate-100">No HomeStays Available</h3>
-            <p className="text-sm text-slate-400 mb-4">
-              Create homestays first before configuring passcodes
+      {error && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Add New Passcode */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Set Room Passcode
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Room ID</Label>
+              <Input
+                value={newRoomId}
+                onChange={(e) => setNewRoomId(e.target.value)}
+                placeholder="e.g. room_123"
+              />
+            </div>
+            <div>
+              <Label>Passcode / Password</Label>
+              <div className="relative">
+                <Input
+                  type={showPasscode ? "text" : "password"}
+                  value={newPasscode}
+                  onChange={(e) => setNewPasscode(e.target.value)}
+                  placeholder="Set partner login passcode"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPasscode((s) => !s)}
+                >
+                  {showPasscode ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <Button
+            onClick={handleAddPasscode}
+            disabled={addingPasscode}
+            className="gap-2"
+          >
+            {addingPasscode && <Loader2 className="w-4 h-4 animate-spin" />}
+            Set Passcode
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Existing Passcodes */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Configured Passcodes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center gap-2 text-muted-foreground py-4">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading passcodes...</span>
+            </div>
+          ) : passcodes.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-4 text-center">
+              No passcodes configured yet. Add one above.
             </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {homeStays.map((homeStay) => (
-            <Card key={homeStay.id} className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg text-slate-100">{getHomeStayName(homeStay)}</CardTitle>
-                    <p className="text-sm text-slate-400 mt-1">HomeStay ID: {homeStay.id}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Badge variant="outline" className="border-slate-600 text-slate-300">
-                        ₹{homeStay.minPrice.toLocaleString()} - ₹{homeStay.maxPrice.toLocaleString()}/night
+          ) : (
+            <div className="space-y-2">
+              {passcodes.map((config) => (
+                <div
+                  key={config.passcode}
+                  className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30"
+                >
+                  <div className="flex items-center gap-3">
+                    <Key className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <span className="text-sm font-medium">Room: </span>
+                      <Badge variant="outline" className="text-xs font-mono">
+                        {config.roomId}
                       </Badge>
-                      <Badge variant={homeStay.availability ? 'default' : 'secondary'}>
-                        {homeStay.availability ? 'Available' : 'Not Available'}
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium">Passcode: </span>
+                      <Badge variant="secondary" className="text-xs font-mono">
+                        ••••••
                       </Badge>
                     </div>
                   </div>
-                  {homeStay.passcode && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleRemovePasscode(homeStay.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDeletePasscode(config.passcode)}
+                    disabled={deletingPasscode === config.passcode}
+                  >
+                    {deletingPasscode === config.passcode ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-400">Passcode:</span>
-                  <Badge variant="secondary" className="font-mono bg-slate-900 text-slate-100">
-                    {homeStay.passcode || 'Not set'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

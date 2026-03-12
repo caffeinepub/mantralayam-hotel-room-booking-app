@@ -1,36 +1,46 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from '@tanstack/react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Calendar, Users, MapPin, Phone, Home, FileText } from 'lucide-react';
-import { getBookings, type Booking } from '../lib/dataStorage';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import {
+  Calendar,
+  CheckCircle,
+  FileText,
+  Home,
+  MapPin,
+  Phone,
+  Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { type Booking, getBookings } from "../lib/dataStorage";
 
 export default function BookingConfirmationPage() {
   const navigate = useNavigate();
-  const { bookingId } = useParams({ from: '/confirmation/$bookingId' });
+  const { bookingId } = useParams({ from: "/confirmation/$bookingId" });
   const [booking, setBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     const bookings = getBookings();
-    const foundBooking = bookings.find(b => b.id === bookingId);
+    const foundBooking = bookings.find((b) => b.id === bookingId);
     if (foundBooking) {
       setBooking(foundBooking);
     }
   }, [bookingId]);
 
   const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleString('en-IN', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
+    return new Date(dateTime).toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
     });
   };
 
   const calculateDuration = () => {
-    if (!booking) return '';
+    if (!booking) return "";
     const checkIn = new Date(booking.checkInDate);
     const checkOut = new Date(booking.checkOutDate);
-    const hours = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60));
+    const hours = Math.round(
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60),
+    );
     return `${hours} hours`;
   };
 
@@ -40,10 +50,7 @@ export default function BookingConfirmationPage() {
         <Card className="glass-card shadow-saffron">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Booking not found</p>
-            <Button
-              onClick={() => navigate({ to: '/' })}
-              className="mt-4"
-            >
+            <Button onClick={() => navigate({ to: "/" })} className="mt-4">
               Go to Home
             </Button>
           </CardContent>
@@ -65,7 +72,7 @@ export default function BookingConfirmationPage() {
           </p>
           <div className="mt-4">
             <Badge className="text-lg px-4 py-2 gradient-saffron-gold text-white border-0">
-              Booking ID: {booking.id.split('-')[1]}
+              Booking ID: {booking.id.split("-")[1]}
             </Badge>
           </div>
         </CardHeader>
@@ -87,11 +94,15 @@ export default function BookingConfirmationPage() {
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Check-in</span>
-                <span className="font-medium">{formatDateTime(booking.checkInDate)}</span>
+                <span className="font-medium">
+                  {formatDateTime(booking.checkInDate)}
+                </span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Check-out</span>
-                <span className="font-medium">{formatDateTime(booking.checkOutDate)}</span>
+                <span className="font-medium">
+                  {formatDateTime(booking.checkOutDate)}
+                </span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Duration</span>
@@ -103,7 +114,9 @@ export default function BookingConfirmationPage() {
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-muted-foreground">Total Amount</span>
-                <span className="text-xl font-bold text-primary">₹{booking.totalPrice}</span>
+                <span className="text-xl font-bold text-primary">
+                  ₹{booking.totalPrice}
+                </span>
               </div>
             </div>
           </div>
@@ -144,11 +157,15 @@ export default function BookingConfirmationPage() {
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Arrive at the property at your scheduled check-in time</span>
+                <span>
+                  Arrive at the property at your scheduled check-in time
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Contact the property directly for any special requests</span>
+                <span>
+                  Contact the property directly for any special requests
+                </span>
               </li>
             </ul>
           </div>
@@ -156,14 +173,14 @@ export default function BookingConfirmationPage() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <Button
-              onClick={() => navigate({ to: '/my-bookings' })}
+              onClick={() => navigate({ to: "/my-bookings" })}
               className="flex-1 gradient-saffron-gold text-white border-0 hover:opacity-90 transition-smooth gap-2"
             >
               <Calendar className="h-4 w-4" />
               View My Bookings
             </Button>
             <Button
-              onClick={() => navigate({ to: '/' })}
+              onClick={() => navigate({ to: "/" })}
               variant="outline"
               className="flex-1 gap-2"
             >

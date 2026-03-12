@@ -83,6 +83,7 @@ export interface Notification {
 export interface PartnerProfile {
   'id' : string,
   'contact' : string,
+  'password' : string,
   'name' : string,
   'registrationDate' : Time,
   'rooms' : Array<string>,
@@ -111,6 +112,14 @@ export type StripeSessionStatus = {
     'completed' : { 'userPrincipal' : [] | [string], 'response' : string }
   } |
   { 'failed' : { 'error' : string } };
+export interface TempleSpecial {
+  'id' : string,
+  'date' : string,
+  'name' : string,
+  'description' : string,
+  'image' : ExternalBlob,
+  'price' : bigint,
+}
 export type Time = bigint;
 export interface TransformationInput {
   'context' : Uint8Array,
@@ -163,9 +172,11 @@ export interface _SERVICE {
     undefined
   >,
   'addHotel' : ActorMethod<[Hotel], undefined>,
+  'addTempleSpecial' : ActorMethod<[TempleSpecial], undefined>,
+  'adminUpdatePartnerProfile' : ActorMethod<[PartnerProfile], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'authenticateAdmin' : ActorMethod<[string, string], boolean>,
-  'authenticatePartnerWithPasscode' : ActorMethod<[string], string>,
+  'authenticatePartnerWithPassword' : ActorMethod<[string], boolean>,
   'cancelBooking' : ActorMethod<[string], undefined>,
   'checkAdminAuthentication' : ActorMethod<[], boolean>,
   'checkPartnerAuthentication' : ActorMethod<[], boolean>,
@@ -187,6 +198,7 @@ export interface _SERVICE {
   'getAllBookings' : ActorMethod<[], Array<Booking>>,
   'getAllPartnerProfiles' : ActorMethod<[], Array<PartnerProfile>>,
   'getAllRoomPasscodes' : ActorMethod<[], Array<RoomPasscodeConfig>>,
+  'getAuthenticatedPartnerId' : ActorMethod<[], [] | [string]>,
   'getAvailableHomeStays' : ActorMethod<[], Array<HomeStay>>,
   'getAvailableHotels' : ActorMethod<[], Array<Hotel>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -198,12 +210,12 @@ export interface _SERVICE {
   'getHotels' : ActorMethod<[], Array<Hotel>>,
   'getMyBookings' : ActorMethod<[], Array<Booking>>,
   'getNotifications' : ActorMethod<[], Array<Notification>>,
-  'getPartnerAuthenticatedRoomId' : ActorMethod<[], [] | [string]>,
   'getPartnerNotifications' : ActorMethod<[string], Array<Notification>>,
   'getPartnerProfile' : ActorMethod<[string], [] | [PartnerProfile]>,
   'getPartnerRooms' : ActorMethod<[string], Array<HomeStay>>,
   'getRoomPasscode' : ActorMethod<[string], [] | [string]>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
+  'getTempleSpecials' : ActorMethod<[], Array<TempleSpecial>>,
   'getUnreadNotifications' : ActorMethod<[], Array<Notification>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'hasCustomerLoggedInBefore' : ActorMethod<[], boolean>,

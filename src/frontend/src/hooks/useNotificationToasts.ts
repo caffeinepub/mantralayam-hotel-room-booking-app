@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
-import { PermanentNotification } from '../lib/notificationStorage';
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import type { PermanentNotification } from "../lib/notificationStorage";
 
 export function useNotificationToasts() {
   const shownNotificationsRef = useRef<Set<string>>(new Set());
@@ -19,24 +19,24 @@ export function useNotificationToasts() {
 
       // Show toast based on category
       const categoryEmoji: Record<string, string> = {
-        bookings: '📅',
-        payments: '💳',
-        partner: '🏢',
-        logins: '👤',
-        issues: '⚠️',
+        bookings: "📅",
+        payments: "💳",
+        partner: "🏢",
+        logins: "👤",
+        issues: "⚠️",
       };
 
-      const emoji = categoryEmoji[notification.category] || '🔔';
-      
+      const emoji = categoryEmoji[notification.category] || "🔔";
+
       toast.success(`${emoji} ${notification.message}`, {
         duration: 5000,
       });
     };
 
-    window.addEventListener('newNotification', handleNewNotification);
+    window.addEventListener("newNotification", handleNewNotification);
 
     return () => {
-      window.removeEventListener('newNotification', handleNewNotification);
+      window.removeEventListener("newNotification", handleNewNotification);
     };
   }, []);
 }

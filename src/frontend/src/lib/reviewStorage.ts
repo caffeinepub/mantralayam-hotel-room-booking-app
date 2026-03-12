@@ -10,7 +10,7 @@ export interface Review {
   bookingId: string;
 }
 
-const REVIEWS_KEY = 'mantralayam_reviews';
+const REVIEWS_KEY = "mantralayam_reviews";
 
 export function getReviews(): Review[] {
   try {
@@ -19,7 +19,7 @@ export function getReviews(): Review[] {
     const reviews = JSON.parse(data);
     return Array.isArray(reviews) ? reviews : [];
   } catch (error) {
-    console.error('Error reading reviews:', error);
+    console.error("Error reading reviews:", error);
     return [];
   }
 }
@@ -27,34 +27,34 @@ export function getReviews(): Review[] {
 export function saveReviews(reviews: Review[]) {
   try {
     localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
-    window.dispatchEvent(new Event('reviewsUpdated'));
+    window.dispatchEvent(new Event("reviewsUpdated"));
   } catch (error) {
-    console.error('Error saving reviews:', error);
+    console.error("Error saving reviews:", error);
   }
 }
 
 export function getHomeStayReviews(homeStayId: string): Review[] {
   const reviews = getReviews();
-  return reviews.filter(r => r.homeStayId === homeStayId);
+  return reviews.filter((r) => r.homeStayId === homeStayId);
 }
 
-export function addReview(review: Omit<Review, 'id' | 'timestamp'>): Review {
+export function addReview(review: Omit<Review, "id" | "timestamp">): Review {
   const newReview: Review = {
     ...review,
     id: `review-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     timestamp: new Date().toISOString(),
   };
-  
+
   const reviews = getReviews();
   reviews.unshift(newReview);
   saveReviews(reviews);
-  
+
   return newReview;
 }
 
 export function deleteReview(reviewId: string) {
   const reviews = getReviews();
-  const filtered = reviews.filter(r => r.id !== reviewId);
+  const filtered = reviews.filter((r) => r.id !== reviewId);
   saveReviews(filtered);
 }
 
@@ -67,5 +67,5 @@ export function getAverageRating(homeStayId: string): number {
 
 export function canUserReview(bookingId: string): boolean {
   const reviews = getReviews();
-  return !reviews.some(r => r.bookingId === bookingId);
+  return !reviews.some((r) => r.bookingId === bookingId);
 }

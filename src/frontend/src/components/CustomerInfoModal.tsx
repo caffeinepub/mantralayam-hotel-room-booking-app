@@ -1,10 +1,16 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { User, Phone } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Phone, User } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface CustomerInfoModalProps {
   isOpen: boolean;
@@ -12,22 +18,26 @@ interface CustomerInfoModalProps {
   onSubmit: (name: string, phone: string) => void;
 }
 
-export default function CustomerInfoModal({ isOpen, onClose, onSubmit }: CustomerInfoModalProps) {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+export default function CustomerInfoModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: CustomerInfoModalProps) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = () => {
     if (!name.trim()) {
-      toast.error('Please enter your name');
+      toast.error("Please enter your name");
       return;
     }
     if (!phone.trim()) {
-      toast.error('Please enter your phone number');
+      toast.error("Please enter your phone number");
       return;
     }
     if (phone.trim().length < 10) {
-      toast.error('Please enter a valid phone number');
+      toast.error("Please enter a valid phone number");
       return;
     }
 
@@ -43,9 +53,12 @@ export default function CustomerInfoModal({ isOpen, onClose, onSubmit }: Custome
           <div className="mx-auto w-16 h-16 rounded-full gradient-saffron-gold flex items-center justify-center mb-4 shadow-saffron">
             <User className="h-8 w-8 text-white" />
           </div>
-          <DialogTitle className="text-2xl text-center">Enter Your Details</DialogTitle>
+          <DialogTitle className="text-2xl text-center">
+            Enter Your Details
+          </DialogTitle>
           <DialogDescription className="text-center">
-            Please provide your name and phone number to continue with your booking
+            Please provide your name and phone number to continue with your
+            booking
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
@@ -58,7 +71,7 @@ export default function CustomerInfoModal({ isOpen, onClose, onSubmit }: Custome
               id="customerName"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="Enter your full name"
               className="glass-card"
               autoFocus
@@ -73,7 +86,7 @@ export default function CustomerInfoModal({ isOpen, onClose, onSubmit }: Custome
               id="customerPhone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="+91 XXXXXXXXXX"
               className="glass-card"
             />
@@ -85,7 +98,7 @@ export default function CustomerInfoModal({ isOpen, onClose, onSubmit }: Custome
               className="w-full gradient-saffron-gold text-white border-0 hover:opacity-90"
               size="lg"
             >
-              {isSubmitting ? 'Processing...' : 'Continue'}
+              {isSubmitting ? "Processing..." : "Continue"}
             </Button>
           </div>
         </div>

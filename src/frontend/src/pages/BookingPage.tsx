@@ -1,32 +1,49 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from '@tanstack/react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { Calendar, Users, CreditCard, ArrowRight, AlertCircle, Clock, Bed } from 'lucide-react';
-import { 
-  getHomeStays, getHotels, getBookings, saveBookings, addNotification, 
-  updateAnalytics, type HomeStay, type Hotel, getHomeStayDisplayPrice, getCustomerSession,
-  getAvailableRoomsCount, getTotalCapacityForRooms
-} from '../lib/dataStorage';
-import { addPermanentNotification } from '../lib/notificationStorage';
-import { upsertCustomer } from '../lib/customerStorage';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import {
+  AlertCircle,
+  ArrowRight,
+  Bed,
+  Calendar,
+  Clock,
+  CreditCard,
+  Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { upsertCustomer } from "../lib/customerStorage";
+import {
+  type HomeStay,
+  type Hotel,
+  addNotification,
+  getAvailableRoomsCount,
+  getBookings,
+  getCustomerSession,
+  getHomeStayDisplayPrice,
+  getHomeStays,
+  getHotels,
+  getTotalCapacityForRooms,
+  saveBookings,
+  updateAnalytics,
+} from "../lib/dataStorage";
+import { addPermanentNotification } from "../lib/notificationStorage";
 
 export default function BookingPage() {
   const navigate = useNavigate();
-  const { roomId } = useParams({ from: '/booking/$roomId' });
+  const { roomId } = useParams({ from: "/booking/$roomId" });
   const [homeStay, setHomeStay] = useState<HomeStay | null>(null);
   const [hotel, setHotel] = useState<Hotel | null>(null);
-  const [checkInDate, setCheckInDate] = useState('');
-  const [checkInTime, setCheckInTime] = useState('14:00');
-  const [guests, setGuests] = useState('2');
+  const [checkInDate, setCheckInDate] = useState("");
+  const [checkInTime, setCheckInTime] = useState("14:00");
+  const [guests, setGuests] = useState("2");
   const [roomQuantity, setRoomQuantity] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [availableRooms, setAvailableRooms] = useState(0);
   const [maxGuests, setMaxGuests] = useState(0);
 
@@ -34,8 +51,8 @@ export default function BookingPage() {
     // Check customer session
     const session = getCustomerSession();
     if (!session || !session.verified) {
-      toast.error('Please provide your details first');
-      navigate({ to: '/browse-rooms' });
+      toast.error("Please provide your details first");
+      navigate({ to: "/browse-rooms" });
       return;
     }
 
@@ -43,30 +60,31 @@ export default function BookingPage() {
     setCustomerPhone(session.phone);
 
     const homeStays = getHomeStays();
-    const foundHomeStay = homeStays.find(h => h.id === roomId);
-    
+    const foundHomeStay = homeStays.find((h) => h.id === roomId);
+
     if (!foundHomeStay) {
-      toast.error('HomeStay not found');
-      navigate({ to: '/browse-rooms' });
+      toast.error("HomeStay not found");
+      navigate({ to: "/browse-rooms" });
       return;
     }
 
     setHomeStay(foundHomeStay);
 
     const hotels = getHotels();
-    const foundHotel = hotels.find(h => h.id === foundHomeStay.hotelId);
+    const foundHotel = hotels.find((h) => h.id === foundHomeStay.hotelId);
     setHotel(foundHotel || null);
 
     // Set default check-in date to today
     const today = new Date();
-    setCheckInDate(today.toISOString().split('T')[0]);
+    setCheckInDate(today.toISOString().split("T")[0]);
   }, [roomId, navigate]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stable functions
   useEffect(() => {
     if (homeStay) {
       const available = getAvailableRoomsCount(homeStay.id);
       setAvailableRooms(available);
-      
+
       // Reset room quantity if it exceeds available rooms
       if (roomQuantity > available) {
         setRoomQuantity(Math.max(1, available));
@@ -74,13 +92,14 @@ export default function BookingPage() {
     }
   }, [homeStay]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stable functions
   useEffect(() => {
     if (homeStay && roomQuantity > 0) {
       const maxAllowed = getTotalCapacityForRooms(homeStay.id, roomQuantity);
       setMaxGuests(maxAllowed);
-      
+
       // Adjust guests if exceeds capacity
-      const currentGuests = parseInt(guests) || 1;
+      const currentGuests = Number.parseInt(guests) || 1;
       if (currentGuests > maxAllowed) {
         setGuests(maxAllowed.toString());
       }
@@ -88,7 +107,7 @@ export default function BookingPage() {
   }, [homeStay, roomQuantity]);
 
   const calculateCheckOutDateTime = () => {
-    if (!checkInDate || !checkInTime) return '';
+    if (!checkInDate || !checkInTime) return "";
     const checkIn = new Date(`${checkInDate}T${checkInTime}`);
     const checkOut = new Date(checkIn.getTime() + 12 * 60 * 60 * 1000); // Add 12 hours
     return checkOut.toISOString();
@@ -105,24 +124,28 @@ export default function BookingPage() {
     if (!homeStay || !hotel) return;
 
     if (!checkInDate || !checkInTime) {
-      toast.error('Please select check-in date and time');
+      toast.error("Please select check-in date and time");
       return;
     }
 
     const checkInDateTime = `${checkInDate}T${checkInTime}`;
-    
+
     // Check availability
     const available = getAvailableRoomsCount(homeStay.id);
     if (available < roomQuantity) {
-      toast.error(`Sorry, only ${available} room(s) available. Please adjust your selection.`);
+      toast.error(
+        `Sorry, only ${available} room(s) available. Please adjust your selection.`,
+      );
       return;
     }
 
     // Validate guest count against capacity
-    const guestCount = parseInt(guests) || 1;
+    const guestCount = Number.parseInt(guests) || 1;
     const maxAllowed = getTotalCapacityForRooms(homeStay.id, roomQuantity);
     if (guestCount > maxAllowed) {
-      toast.error(`Maximum ${maxAllowed} guests allowed for ${roomQuantity} room(s). Please book another room or reduce guest count.`);
+      toast.error(
+        `Maximum ${maxAllowed} guests allowed for ${roomQuantity} room(s). Please book another room or reduce guest count.`,
+      );
       return;
     }
 
@@ -135,7 +158,7 @@ export default function BookingPage() {
 
       const newBooking = {
         id: bookingId,
-        userId: 'customer-session', // Session-based user
+        userId: "customer-session", // Session-based user
         customerName,
         customerPhone,
         hotelId: hotel.id,
@@ -146,9 +169,9 @@ export default function BookingPage() {
         checkOutDate: checkOutDateTime,
         guests: guestCount,
         totalPrice,
-        status: 'pending' as const,
+        status: "pending" as const,
         bookingDate: new Date().toISOString(),
-        paymentMethod: 'upi' as const,
+        paymentMethod: "upi" as const,
         roomQuantity,
       };
 
@@ -159,23 +182,26 @@ export default function BookingPage() {
       // Save customer to permanent storage (idempotent)
       upsertCustomer(customerName, customerPhone);
 
-      addNotification(`New booking: ${homeStay.name} by ${customerName} (${customerPhone}) - ${roomQuantity} room(s), 12-hour stay`, 'booking');
+      addNotification(
+        `New booking: ${homeStay.name} by ${customerName} (${customerPhone}) - ${roomQuantity} room(s), 12-hour stay`,
+        "booking",
+      );
       addPermanentNotification(
         `New booking: ${homeStay.name} by ${customerName} (${customerPhone}) - ${roomQuantity} room(s), 12-hour stay`,
-        'bookings',
-        'booking'
+        "bookings",
+        "booking",
       );
-      updateAnalytics('bookings');
+      updateAnalytics("bookings");
 
-      toast.success('Booking created! Proceeding to payment...');
-      
+      toast.success("Booking created! Proceeding to payment...");
+
       // Simulate payment processing
       setTimeout(() => {
-        navigate({ to: '/confirmation/$bookingId', params: { bookingId } });
+        navigate({ to: "/confirmation/$bookingId", params: { bookingId } });
       }, 1000);
     } catch (error) {
-      console.error('Booking error:', error);
-      toast.error('Failed to create booking. Please try again.');
+      console.error("Booking error:", error);
+      toast.error("Failed to create booking. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -250,7 +276,7 @@ export default function BookingPage() {
                       type="date"
                       value={checkInDate}
                       onChange={(e) => setCheckInDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={new Date().toISOString().split("T")[0]}
                       className="glass-card"
                     />
                   </div>
@@ -273,7 +299,9 @@ export default function BookingPage() {
                       type="button"
                       variant="outline"
                       size="icon"
-                      onClick={() => setRoomQuantity(Math.max(1, roomQuantity - 1))}
+                      onClick={() =>
+                        setRoomQuantity(Math.max(1, roomQuantity - 1))
+                      }
                       disabled={roomQuantity <= 1}
                       className="glass-card"
                     >
@@ -283,7 +311,17 @@ export default function BookingPage() {
                       id="roomQuantity"
                       type="number"
                       value={roomQuantity}
-                      onChange={(e) => setRoomQuantity(Math.max(1, Math.min(availableRooms, parseInt(e.target.value) || 1)))}
+                      onChange={(e) =>
+                        setRoomQuantity(
+                          Math.max(
+                            1,
+                            Math.min(
+                              availableRooms,
+                              Number.parseInt(e.target.value) || 1,
+                            ),
+                          ),
+                        )
+                      }
                       min="1"
                       max={availableRooms}
                       className="glass-card text-center"
@@ -292,7 +330,11 @@ export default function BookingPage() {
                       type="button"
                       variant="outline"
                       size="icon"
-                      onClick={() => setRoomQuantity(Math.min(availableRooms, roomQuantity + 1))}
+                      onClick={() =>
+                        setRoomQuantity(
+                          Math.min(availableRooms, roomQuantity + 1),
+                        )
+                      }
                       disabled={roomQuantity >= availableRooms}
                       className="glass-card"
                     >
@@ -326,9 +368,9 @@ export default function BookingPage() {
                       <Clock className="h-4 w-4 text-primary" />
                       <span className="font-medium">Check-out:</span>
                       <span className="text-muted-foreground">
-                        {new Date(checkOutDateTime).toLocaleString('en-IN', {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
+                        {new Date(checkOutDateTime).toLocaleString("en-IN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
                         })}
                       </span>
                     </div>
@@ -352,7 +394,9 @@ export default function BookingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">{homeStay.name}</h3>
+                  <h3 className="font-semibold text-lg mb-1">
+                    {homeStay.name}
+                  </h3>
                   <p className="text-sm text-muted-foreground">{hotel.name}</p>
                 </div>
 
@@ -370,7 +414,9 @@ export default function BookingPage() {
                     <span className="font-medium">12 hours</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Price per room</span>
+                    <span className="text-muted-foreground">
+                      Price per room
+                    </span>
                     <span className="font-medium">
                       ₹{homeStay.fixedPrice || homeStay.minPrice}
                     </span>
@@ -380,7 +426,7 @@ export default function BookingPage() {
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-lg font-semibold">Total</span>
                   <span className="text-2xl font-bold text-primary">
-                    ₹{totalPrice.toLocaleString('en-IN')}
+                    ₹{totalPrice.toLocaleString("en-IN")}
                   </span>
                 </div>
 
@@ -390,7 +436,7 @@ export default function BookingPage() {
                   className="w-full gradient-saffron-gold text-white border-0 hover:opacity-90 h-12 text-base font-semibold"
                 >
                   {isProcessing ? (
-                    'Processing...'
+                    "Processing..."
                   ) : (
                     <>
                       Proceed to Payment

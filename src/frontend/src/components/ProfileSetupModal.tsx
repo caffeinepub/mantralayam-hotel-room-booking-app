@@ -1,27 +1,35 @@
-import { useState, useEffect } from 'react';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import {
+  useGetCallerUserProfile,
+  useSaveCallerUserProfile,
+} from "../hooks/useQueries";
 
 export default function ProfileSetupModal() {
   const { identity } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched,
+  } = useGetCallerUserProfile();
   const saveProfile = useSaveCallerUserProfile();
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
 
   const isAuthenticated = !!identity;
-  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
+  const showProfileSetup =
+    isAuthenticated && !profileLoading && isFetched && userProfile === null;
 
   useEffect(() => {
     if (userProfile) {
@@ -33,7 +41,7 @@ export default function ProfileSetupModal() {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error('Please enter your name');
+      toast.error("Please enter your name");
       return;
     }
 
@@ -41,16 +49,19 @@ export default function ProfileSetupModal() {
       await saveProfile.mutateAsync({
         name: name.trim(),
       });
-      toast.success('Profile created successfully!');
+      toast.success("Profile created successfully!");
     } catch (error) {
-      console.error('Profile setup error:', error);
-      toast.error('Failed to create profile');
+      console.error("Profile setup error:", error);
+      toast.error("Failed to create profile");
     }
   };
 
   return (
     <Dialog open={showProfileSetup} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Welcome! Set up your profile</DialogTitle>
           <DialogDescription>
@@ -68,8 +79,12 @@ export default function ProfileSetupModal() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={saveProfile.isPending}>
-            {saveProfile.isPending ? 'Creating Profile...' : 'Create Profile'}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={saveProfile.isPending}
+          >
+            {saveProfile.isPending ? "Creating Profile..." : "Create Profile"}
           </Button>
         </form>
       </DialogContent>

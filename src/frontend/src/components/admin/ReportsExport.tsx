@@ -1,27 +1,53 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { toast } from 'sonner';
-import { FileText, Download, Calendar as CalendarIcon, Filter } from 'lucide-react';
-import { getBookings, getHomeStays, getHotels, getCustomerSession, type Booking, type HomeStay } from '../../lib/dataStorage';
-import { format } from 'date-fns';
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import {
+  Calendar as CalendarIcon,
+  Download,
+  FileText,
+  Filter,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  type Booking,
+  type HomeStay,
+  getBookings,
+  getCustomerSession,
+  getHomeStays,
+  getHotels,
+} from "../../lib/dataStorage";
 
-type ReportType = 'all-customers' | 'date-range' | 'individual-customer' | 'properties';
+type ReportType =
+  | "all-customers"
+  | "date-range"
+  | "individual-customer"
+  | "properties";
 
 export default function ReportsExport() {
-  const [reportType, setReportType] = useState<ReportType>('all-customers');
+  const [reportType, setReportType] = useState<ReportType>("all-customers");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
-  const [customerName, setCustomerName] = useState('');
+  const [customerName, setCustomerName] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generatePDFContent = (data: any, type: ReportType): string => {
-    const timestamp = new Date().toLocaleString('en-IN');
+  const generatePDFContent = (_data: any, type: ReportType): string => {
+    const timestamp = new Date().toLocaleString("en-IN");
     let content = `
       <!DOCTYPE html>
       <html>
@@ -130,10 +156,12 @@ export default function ReportsExport() {
         </div>
     `;
 
-    if (type === 'all-customers') {
+    if (type === "all-customers") {
       const bookings = getBookings();
-      const uniqueCustomers = Array.from(new Set(bookings.map(b => b.customerName)));
-      
+      const uniqueCustomers = Array.from(
+        new Set(bookings.map((b) => b.customerName)),
+      );
+
       content += `
         <div class="info-box">
           <h2>All Customers Report</h2>
@@ -151,12 +179,18 @@ export default function ReportsExport() {
           </thead>
           <tbody>
       `;
-      
-      uniqueCustomers.forEach(customerName => {
-        const customerBookings = bookings.filter(b => b.customerName === customerName);
-        const totalSpent = customerBookings.reduce((sum, b) => sum + b.totalPrice, 0);
-        const phone = customerBookings[0]?.customerPhone || 'N/A';
-        
+
+      // biome-ignore lint/complexity/noForEach: PDF generation loop
+      for (const customerName of uniqueCustomers) {
+        const customerBookings = bookings.filter(
+          (b) => b.customerName === customerName,
+        );
+        const totalSpent = customerBookings.reduce(
+          (sum, b) => sum + b.totalPrice,
+          0,
+        );
+        const phone = customerBookings[0]?.customerPhone || "N/A";
+
         content += `
           <tr>
             <td>${customerName}</td>
@@ -165,22 +199,22 @@ export default function ReportsExport() {
             <td>₹${totalSpent.toLocaleString()}</td>
           </tr>
         `;
-      });
-      
+      }
+
       content += `
           </tbody>
         </table>
       `;
-    } else if (type === 'date-range' && startDate && endDate) {
-      const bookings = getBookings().filter(b => {
+    } else if (type === "date-range" && startDate && endDate) {
+      const bookings = getBookings().filter((b) => {
         const bookingDate = new Date(b.bookingDate);
         return bookingDate >= startDate && bookingDate <= endDate;
       });
-      
+
       content += `
         <div class="info-box">
           <h2>Date Range Report</h2>
-          <p><strong>Period:</strong> ${format(startDate, 'PPP')} to ${format(endDate, 'PPP')}</p>
+          <p><strong>Period:</strong> ${format(startDate, "PPP")} to ${format(endDate, "PPP")}</p>
           <p><strong>Total Bookings:</strong> ${bookings.length}</p>
           <p><strong>Total Revenue:</strong> ₹${bookings.reduce((sum, b) => sum + b.totalPrice, 0).toLocaleString()}</p>
         </div>
@@ -198,35 +232,40 @@ export default function ReportsExport() {
           </thead>
           <tbody>
       `;
-      
-      bookings.forEach(booking => {
-        const statusClass = booking.status === 'confirmed' ? 'badge-confirmed' : 
-                           booking.status === 'pending' ? 'badge-pending' : 'badge-cancelled';
+
+      // biome-ignore lint/complexity/noForEach: PDF generation loop
+      for (const booking of bookings) {
+        const statusClass =
+          booking.status === "confirmed"
+            ? "badge-confirmed"
+            : booking.status === "pending"
+              ? "badge-pending"
+              : "badge-cancelled";
         content += `
           <tr>
             <td>${booking.id}</td>
             <td>${booking.customerName}<br/><small>${booking.customerPhone}</small></td>
             <td>${booking.homeStayName}</td>
-            <td>${new Date(booking.checkInDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</td>
-            <td>${new Date(booking.checkOutDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</td>
+            <td>${new Date(booking.checkInDate).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}</td>
+            <td>${new Date(booking.checkOutDate).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}</td>
             <td>₹${booking.totalPrice.toLocaleString()}</td>
             <td><span class="badge ${statusClass}">${booking.status}</span></td>
           </tr>
         `;
-      });
-      
+      }
+
       content += `
           </tbody>
         </table>
       `;
-    } else if (type === 'individual-customer' && customerName) {
-      const bookings = getBookings().filter(b => 
-        b.customerName.toLowerCase().includes(customerName.toLowerCase())
+    } else if (type === "individual-customer" && customerName) {
+      const bookings = getBookings().filter((b) =>
+        b.customerName.toLowerCase().includes(customerName.toLowerCase()),
       );
-      
+
       if (bookings.length > 0) {
         const totalSpent = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
-        
+
         content += `
           <div class="info-box">
             <h2>Customer Details Report</h2>
@@ -249,33 +288,38 @@ export default function ReportsExport() {
             </thead>
             <tbody>
         `;
-        
-        bookings.forEach(booking => {
-          const statusClass = booking.status === 'confirmed' ? 'badge-confirmed' : 
-                             booking.status === 'pending' ? 'badge-pending' : 'badge-cancelled';
+
+        // biome-ignore lint/complexity/noForEach: PDF generation loop
+        for (const booking of bookings) {
+          const statusClass =
+            booking.status === "confirmed"
+              ? "badge-confirmed"
+              : booking.status === "pending"
+                ? "badge-pending"
+                : "badge-cancelled";
           content += `
             <tr>
-              <td>${new Date(booking.bookingDate).toLocaleDateString('en-IN')}</td>
+              <td>${new Date(booking.bookingDate).toLocaleDateString("en-IN")}</td>
               <td>${booking.homeStayName}</td>
-              <td>${new Date(booking.checkInDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</td>
-              <td>${new Date(booking.checkOutDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</td>
+              <td>${new Date(booking.checkInDate).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}</td>
+              <td>${new Date(booking.checkOutDate).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}</td>
               <td>${booking.guests}</td>
               <td>₹${booking.totalPrice.toLocaleString()}</td>
               <td><span class="badge ${statusClass}">${booking.status}</span></td>
             </tr>
           `;
-        });
-        
+        }
+
         content += `
             </tbody>
           </table>
         `;
       }
-    } else if (type === 'properties') {
+    } else if (type === "properties") {
       const homeStays = getHomeStays();
       const hotels = getHotels();
       const bookings = getBookings();
-      
+
       content += `
         <div class="info-box">
           <h2>Properties Report</h2>
@@ -297,24 +341,27 @@ export default function ReportsExport() {
           </thead>
           <tbody>
       `;
-      
-      homeStays.forEach(hs => {
-        const hsBookings = bookings.filter(b => b.homeStayId === hs.id && b.status === 'confirmed');
+
+      // biome-ignore lint/complexity/noForEach: PDF generation loop
+      for (const hs of homeStays) {
+        const hsBookings = bookings.filter(
+          (b) => b.homeStayId === hs.id && b.status === "confirmed",
+        );
         const revenue = hsBookings.reduce((sum, b) => sum + b.totalPrice, 0);
-        
+
         content += `
           <tr>
             <td>${hs.name}</td>
             <td>${hs.partnerName}</td>
             <td>${hs.partnerPhoneNumber}</td>
             <td>${hs.roomCount}</td>
-            <td>${hs.distanceFromTemple || 'N/A'}</td>
+            <td>${hs.distanceFromTemple || "N/A"}</td>
             <td>${hsBookings.length}</td>
             <td>₹${revenue.toLocaleString()}</td>
           </tr>
         `;
-      });
-      
+      }
+
       content += `
           </tbody>
         </table>
@@ -339,11 +386,11 @@ export default function ReportsExport() {
     setTimeout(() => {
       try {
         const htmlContent = generatePDFContent({}, reportType);
-        
+
         // Create a blob and download
-        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const blob = new Blob([htmlContent], { type: "text/html" });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
         a.download = `mantralayam-report-${reportType}-${Date.now()}.html`;
         document.body.appendChild(a);
@@ -351,17 +398,19 @@ export default function ReportsExport() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        toast.success('Report generated successfully! Opening in new window...');
-        
+        toast.success(
+          "Report generated successfully! Opening in new window...",
+        );
+
         // Open in new window for printing
-        const printWindow = window.open('', '_blank');
+        const printWindow = window.open("", "_blank");
         if (printWindow) {
           printWindow.document.write(htmlContent);
           printWindow.document.close();
         }
       } catch (error) {
-        console.error('Report generation error:', error);
-        toast.error('Failed to generate report');
+        console.error("Report generation error:", error);
+        toast.error("Failed to generate report");
       } finally {
         setIsGenerating(false);
       }
@@ -376,8 +425,12 @@ export default function ReportsExport() {
             <FileText className="h-5 w-5 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl text-slate-100">Reports & Exports</CardTitle>
-            <p className="text-sm text-slate-400">Generate professional PDF reports</p>
+            <CardTitle className="text-2xl text-slate-100">
+              Reports & Exports
+            </CardTitle>
+            <p className="text-sm text-slate-400">
+              Generate professional PDF reports
+            </p>
           </div>
         </div>
       </CardHeader>
@@ -385,32 +438,44 @@ export default function ReportsExport() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-slate-300">Report Type</Label>
-            <Select value={reportType} onValueChange={(value) => setReportType(value as ReportType)}>
+            <Select
+              value={reportType}
+              onValueChange={(value) => setReportType(value as ReportType)}
+            >
               <SelectTrigger className="glass-card bg-slate-800 border-slate-700 text-slate-100">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-customers">All Customers</SelectItem>
                 <SelectItem value="date-range">Date Range Bookings</SelectItem>
-                <SelectItem value="individual-customer">Individual Customer</SelectItem>
+                <SelectItem value="individual-customer">
+                  Individual Customer
+                </SelectItem>
                 <SelectItem value="properties">Hotels & HomeStays</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {reportType === 'date-range' && (
+          {reportType === "date-range" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-slate-300">Start Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left glass-card bg-slate-800 border-slate-700 text-slate-100">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left glass-card bg-slate-800 border-slate-700 text-slate-100"
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, 'PPP') : 'Pick a date'}
+                      {startDate ? format(startDate, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} />
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                    />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -418,20 +483,27 @@ export default function ReportsExport() {
                 <Label className="text-slate-300">End Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left glass-card bg-slate-800 border-slate-700 text-slate-100">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left glass-card bg-slate-800 border-slate-700 text-slate-100"
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, 'PPP') : 'Pick a date'}
+                      {endDate ? format(endDate, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={endDate} onSelect={setEndDate} />
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                    />
                   </PopoverContent>
                 </Popover>
               </div>
             </div>
           )}
 
-          {reportType === 'individual-customer' && (
+          {reportType === "individual-customer" && (
             <div className="space-y-2">
               <Label className="text-slate-300">Customer Name</Label>
               <Input
@@ -445,7 +517,11 @@ export default function ReportsExport() {
 
           <Button
             onClick={handleGenerateReport}
-            disabled={isGenerating || (reportType === 'date-range' && (!startDate || !endDate)) || (reportType === 'individual-customer' && !customerName)}
+            disabled={
+              isGenerating ||
+              (reportType === "date-range" && (!startDate || !endDate)) ||
+              (reportType === "individual-customer" && !customerName)
+            }
             className="w-full gradient-saffron-gold text-white gap-2"
             size="lg"
           >
@@ -464,7 +540,9 @@ export default function ReportsExport() {
         </div>
 
         <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-          <h4 className="text-sm font-semibold text-slate-100 mb-2">Report Features:</h4>
+          <h4 className="text-sm font-semibold text-slate-100 mb-2">
+            Report Features:
+          </h4>
           <ul className="text-sm text-slate-400 space-y-1">
             <li>• Professional PDF-ready HTML format</li>
             <li>• Saffron-gold branded design</li>

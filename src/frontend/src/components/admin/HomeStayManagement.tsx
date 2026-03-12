@@ -1,436 +1,696 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
-import { Home, Plus, Edit, Trash2, Save, X, Bed } from 'lucide-react';
-import { getHomeStays, saveHomeStays, getHotels, type HomeStay, type Hotel, type RoomAvailability, getHomeStayBookingStats, normalizeHomeStay } from '../../lib/dataStorage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { useQueryClient } from "@tanstack/react-query";
+import { Edit, Eye, EyeOff, Loader2, Plus, Trash2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
+import type { HomeStay, PartnerProfile, RoomType } from "../../backend";
+import { Variant_admin_partner } from "../../backend";
+import { useActor } from "../../hooks/useActor";
+import {
+  useAddHomeStayWithOptionalPasscode,
+  useDeleteHomeStay,
+  useGetAllPartnerProfiles,
+  useGetAvailableHomeStays,
+  useRegisterPartnerProfile,
+  useUpdateHomeStay,
+} from "../../hooks/useQueries";
+import { syncPartnerToStorage } from "../../lib/roomStorage";
+
+type FormData = {
+  id: string;
+  hotelId: string;
+  roomType: string;
+  price: string;
+  amenities: string;
+  description: string;
+  availability: boolean;
+  ownerType: "admin" | "partner";
+  partnerId: string;
+  partnerName: string;
+  partnerPhoneNumber: string;
+  partnerPassword: string;
+  passcode: string;
+  googleMapsLink: string;
+  distanceFromTemple: string;
+  photoUrls: string;
+  ownerMessage: string;
+};
+
+const defaultForm: FormData = {
+  id: "",
+  hotelId: "",
+  roomType: "single",
+  price: "",
+  amenities: "",
+  description: "",
+  availability: true,
+  ownerType: "admin",
+  partnerId: "",
+  partnerName: "",
+  partnerPhoneNumber: "",
+  partnerPassword: "",
+  passcode: "",
+  googleMapsLink: "",
+  distanceFromTemple: "",
+  photoUrls: "",
+  ownerMessage: "",
+};
+
+function toRoomType(value: string): RoomType {
+  if (value === "double") return "double" as RoomType;
+  if (value === "suite") return "suite" as RoomType;
+  return "single" as RoomType;
+}
+
+function isSessionError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /unauthorized|session|expired|authentication/i.test(msg);
+}
 
 export default function HomeStayManagement() {
-  const [homeStays, setHomeStays] = useState<HomeStay[]>([]);
-  const [hotels, setHotels] = useState<Hotel[]>([]);
-  const [editingHomeStay, setEditingHomeStay] = useState<HomeStay | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
+  const queryClient = useQueryClient();
+  const { actor } = useActor();
+
+  const { data: homestays = [], isLoading } = useGetAvailableHomeStays();
+  const { data: partnerProfiles = [] } = useGetAllPartnerProfiles();
+
+  const addMutation = useAddHomeStayWithOptionalPasscode();
+  const updateMutation = useUpdateHomeStay();
+  const deleteMutation = useDeleteHomeStay();
+  const registerPartnerMutation = useRegisterPartnerProfile();
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<HomeStay | null>(null);
+  const [deleteRoomId, setDeleteRoomId] = useState<string | null>(null);
+  const [form, setForm] = useState<FormData>(defaultForm);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    loadData();
+    if (editingRoom) {
+      setForm({
+        id: editingRoom.id,
+        hotelId: editingRoom.hotelId,
+        roomType: editingRoom.roomType,
+        price: String(editingRoom.price),
+        amenities: editingRoom.amenities.join(", "),
+        description: editingRoom.description,
+        availability: editingRoom.availability,
+        ownerType:
+          editingRoom.ownerType === Variant_admin_partner.partner
+            ? "partner"
+            : "admin",
+        partnerId: editingRoom.partnerId ?? "",
+        partnerName: editingRoom.partnerName,
+        partnerPhoneNumber: editingRoom.partnerPhoneNumber,
+        partnerPassword: "",
+        passcode: "",
+        googleMapsLink: editingRoom.googleMapsLink ?? "",
+        distanceFromTemple:
+          editingRoom.distanceFromTemple != null
+            ? String(editingRoom.distanceFromTemple)
+            : "",
+        photoUrls: editingRoom.photoUrls.join("\n"),
+        ownerMessage: editingRoom.ownerMessage,
+      });
+    } else {
+      setForm(defaultForm);
+    }
+  }, [editingRoom]);
 
-    const handleUpdate = () => loadData();
-    window.addEventListener('homeStaysUpdated', handleUpdate);
-    window.addEventListener('hotelsUpdated', handleUpdate);
-
-    return () => {
-      window.removeEventListener('homeStaysUpdated', handleUpdate);
-      window.removeEventListener('hotelsUpdated', handleUpdate);
-    };
-  }, []);
-
-  const loadData = () => {
-    setHomeStays(getHomeStays());
-    setHotels(getHotels());
+  const handleOpenCreate = () => {
+    setEditingRoom(null);
+    setForm(defaultForm);
+    setIsFormOpen(true);
   };
 
-  const handleAdd = () => {
-    const newHomeStay: HomeStay = {
-      id: `homestay-${Date.now()}`,
-      hotelId: hotels[0]?.id || '',
-      name: '',
-      description: '',
-      minPrice: 1000,
-      maxPrice: 2000,
-      amenities: [],
-      photos: [],
-      availability: true,
-      ownerType: 'admin',
-      partnerName: 'Admin',
-      partnerPhoneNumber: '',
-      photoUrls: [],
-      videoUrls: [],
-      ratings: [],
-      ownerMessage: '',
-      roomCount: 1,
-      roomAvailability: [
-        { roomIndex: 1, isAvailable: true, unavailableDateRanges: [], personCapacity: 2 }
-      ],
-    };
-    setEditingHomeStay(newHomeStay);
-    setIsAdding(true);
+  const handleOpenEdit = (room: HomeStay) => {
+    setEditingRoom(room);
+    setIsFormOpen(true);
   };
 
-  const handleEdit = (homeStay: HomeStay) => {
-    const normalized = normalizeHomeStay(homeStay);
-    setEditingHomeStay(normalized);
-    setIsAdding(false);
-  };
-
-  const handleSave = () => {
-    if (!editingHomeStay) return;
-
-    if (!editingHomeStay.name || !editingHomeStay.hotelId) {
-      toast.error('Please fill in all required fields');
+  const handleSubmit = async () => {
+    if (!form.price || Number.isNaN(Number(form.price))) {
+      toast.error("Please enter a valid price.");
       return;
     }
 
-    // Ensure roomAvailability matches roomCount
-    const roomCount = editingHomeStay.roomCount || 1;
-    const roomAvailability = editingHomeStay.roomAvailability || [];
-    
-    // Adjust roomAvailability to match roomCount
-    const updatedRoomAvailability: RoomAvailability[] = [];
-    for (let i = 1; i <= roomCount; i++) {
-      const existing = roomAvailability.find(r => r.roomIndex === i);
-      if (existing) {
-        updatedRoomAvailability.push(existing);
-      } else {
-        updatedRoomAvailability.push({
-          roomIndex: i,
-          isAvailable: true,
-          unavailableDateRanges: [],
-          personCapacity: 2,
-        });
+    const amenitiesArr = form.amenities
+      .split(",")
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    const photoUrlsArr = form.photoUrls
+      .split("\n")
+      .map((u) => u.trim())
+      .filter(Boolean);
+
+    const roomId = editingRoom?.id || `room_${Date.now()}`;
+
+    // Handle partner registration/update
+    if (form.ownerType === "partner") {
+      if (!form.partnerId) {
+        toast.error("Partner ID is required for partner rooms.");
+        return;
+      }
+
+      const existingPartner = partnerProfiles.find(
+        (p) => p.id === form.partnerId,
+      );
+
+      if (!existingPartner && form.partnerPassword) {
+        const newPartner: PartnerProfile = {
+          id: form.partnerId,
+          name: form.partnerName,
+          contact: form.partnerPhoneNumber,
+          rooms: [roomId],
+          registrationDate: BigInt(Date.now()) * BigInt(1_000_000),
+          password: form.partnerPassword,
+        };
+        try {
+          await registerPartnerMutation.mutateAsync(newPartner);
+          syncPartnerToStorage(form.partnerId, form.partnerPassword, roomId);
+        } catch (err) {
+          if (isSessionError(err)) {
+            toast.error(
+              "Your session has expired. Please log out and log back in.",
+            );
+          } else {
+            toast.error("Failed to register partner.");
+          }
+          return;
+        }
+      } else if (existingPartner && form.partnerPassword && actor) {
+        try {
+          await actor.adminUpdatePartnerProfile({
+            ...existingPartner,
+            password: form.partnerPassword,
+            name: form.partnerName,
+            contact: form.partnerPhoneNumber,
+          });
+          syncPartnerToStorage(form.partnerId, form.partnerPassword, roomId);
+          queryClient.invalidateQueries({ queryKey: ["partnerProfiles"] });
+          toast.success("Partner password updated. Active immediately.");
+        } catch (err) {
+          if (isSessionError(err)) {
+            toast.error(
+              "Your session has expired. Please log out and log back in.",
+            );
+          } else {
+            toast.error("Failed to update partner password.");
+          }
+          return;
+        }
       }
     }
 
-    const updatedHomeStay = {
-      ...editingHomeStay,
-      roomAvailability: updatedRoomAvailability,
+    const homeStay: HomeStay = {
+      id: roomId,
+      hotelId: form.hotelId,
+      roomType: toRoomType(form.roomType),
+      price: BigInt(Math.round(Number(form.price))),
+      amenities: amenitiesArr,
+      photos: [],
+      description: form.description,
+      availability: form.availability,
+      ownerType:
+        form.ownerType === "partner"
+          ? Variant_admin_partner.partner
+          : Variant_admin_partner.admin,
+      partnerId: form.ownerType === "partner" ? form.partnerId : undefined,
+      googleMapsLink: form.googleMapsLink || undefined,
+      partnerName: form.partnerName,
+      partnerPhoneNumber: form.partnerPhoneNumber,
+      distanceFromTemple: form.distanceFromTemple
+        ? BigInt(Math.round(Number(form.distanceFromTemple)))
+        : undefined,
+      photoUrls: photoUrlsArr,
+      videoUrls: [],
+      ratings: editingRoom?.ratings ?? [],
+      ownerMessage: form.ownerMessage,
     };
 
-    const allHomeStays = getHomeStays();
-    if (isAdding) {
-      allHomeStays.push(updatedHomeStay);
-    } else {
-      const index = allHomeStays.findIndex(h => h.id === updatedHomeStay.id);
-      if (index !== -1) {
-        allHomeStays[index] = updatedHomeStay;
+    try {
+      if (editingRoom) {
+        await updateMutation.mutateAsync(homeStay);
+      } else {
+        await addMutation.mutateAsync({
+          homeStay,
+          passcode: form.passcode || null,
+        });
+      }
+      // Invalidate all relevant queries for immediate propagation
+      queryClient.invalidateQueries({ queryKey: ["homestays"] });
+      queryClient.invalidateQueries({ queryKey: ["homestayDetails"] });
+      queryClient.invalidateQueries({ queryKey: ["partnerRooms"] });
+      setIsFormOpen(false);
+      setEditingRoom(null);
+    } catch (err) {
+      if (isSessionError(err)) {
+        toast.error(
+          "Your session has expired. Please log out and log back in.",
+        );
+      } else {
+        toast.error(
+          editingRoom
+            ? "Failed to update homestay."
+            : "Failed to create homestay.",
+        );
       }
     }
-
-    saveHomeStays(allHomeStays);
-    setEditingHomeStay(null);
-    setIsAdding(false);
-    toast.success(isAdding ? 'HomeStay added successfully' : 'HomeStay updated successfully');
   };
 
-  const handleDelete = (id: string) => {
-    const allHomeStays = getHomeStays();
-    const filtered = allHomeStays.filter(h => h.id !== id);
-    saveHomeStays(filtered);
-    toast.success('HomeStay deleted successfully');
+  const handleDelete = async () => {
+    if (!deleteRoomId) return;
+    try {
+      await deleteMutation.mutateAsync(deleteRoomId);
+      queryClient.invalidateQueries({ queryKey: ["homestays"] });
+      queryClient.invalidateQueries({ queryKey: ["homestayDetails"] });
+      queryClient.invalidateQueries({ queryKey: ["partnerRooms"] });
+      setDeleteRoomId(null);
+    } catch (err) {
+      if (isSessionError(err)) {
+        toast.error(
+          "Your session has expired. Please log out and log back in.",
+        );
+      } else {
+        toast.error("Failed to delete homestay.");
+      }
+    }
   };
 
-  const handleCancel = () => {
-    setEditingHomeStay(null);
-    setIsAdding(false);
-  };
-
-  const updateRoomCapacity = (roomIndex: number, capacity: number) => {
-    if (!editingHomeStay) return;
-    
-    const roomAvailability = editingHomeStay.roomAvailability || [];
-    const updatedRoomAvailability = roomAvailability.map(r =>
-      r.roomIndex === roomIndex ? { ...r, personCapacity: Math.max(1, capacity) } : r
-    );
-    
-    setEditingHomeStay({
-      ...editingHomeStay,
-      roomAvailability: updatedRoomAvailability,
-    });
-  };
+  const isSaving = addMutation.isPending || updateMutation.isPending;
 
   return (
-    <Card className="glass-card bg-slate-900/60 border-slate-800 shadow-saffron-lg">
-      <CardHeader className="border-b border-slate-800 bg-gradient-to-r from-primary/10 to-accent/10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-saffron-gold flex items-center justify-center shadow-saffron">
-              <Home className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl text-slate-100">HomeStay Management</CardTitle>
-              <p className="text-sm text-slate-400">Manage all homestay properties</p>
-            </div>
-          </div>
-          {!editingHomeStay && (
-            <Button
-              onClick={handleAdd}
-              className="gradient-saffron-gold text-white border-0 hover:opacity-90 gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add HomeStay
-            </Button>
-          )}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-foreground">
+          Homestay Management
+        </h2>
+        <Button
+          onClick={handleOpenCreate}
+          size="sm"
+          className="bg-primary text-primary-foreground"
+        >
+          <Plus className="w-4 h-4 mr-1" /> Add Homestay
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
-      </CardHeader>
-      <CardContent className="pt-6">
-        {editingHomeStay ? (
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-slate-300">Name *</Label>
-                <Input
-                  value={editingHomeStay.name}
-                  onChange={(e) => setEditingHomeStay({ ...editingHomeStay, name: e.target.value })}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                  placeholder="Enter homestay name"
-                />
+      ) : homestays.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          No homestays yet. Click "Add Homestay" to create one.
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {homestays.map((room) => (
+            <div
+              key={room.id}
+              className="flex items-center justify-between bg-card border border-border rounded-xl p-4"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-foreground truncate">
+                    {room.partnerName || room.id}
+                  </span>
+                  <Badge variant="outline" className="capitalize text-xs">
+                    {room.roomType}
+                  </Badge>
+                  <Badge
+                    variant={room.availability ? "default" : "secondary"}
+                    className={`text-xs ${room.availability ? "bg-primary/20 text-primary border-primary/30" : ""}`}
+                  >
+                    {room.availability ? "Available" : "Unavailable"}
+                  </Badge>
+                  {room.ownerType === Variant_admin_partner.partner && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs text-blue-600 border-blue-300"
+                    >
+                      Partner
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  ₹{Number(room.price).toLocaleString()}/night
+                  {room.distanceFromTemple != null &&
+                    ` · ${Number(room.distanceFromTemple)}m from temple`}
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Hotel *</Label>
-                <Select
-                  value={editingHomeStay.hotelId}
-                  onValueChange={(value) => setEditingHomeStay({ ...editingHomeStay, hotelId: value })}
+              <div className="flex items-center gap-2 ml-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleOpenEdit(room)}
+                  className="h-8 w-8"
                 >
-                  <SelectTrigger className="glass-card bg-slate-800 border-slate-700 text-slate-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {hotels.map((hotel) => (
-                      <SelectItem key={hotel.id} value={hotel.id}>
-                        {hotel.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDeleteRoomId(room.id)}
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
+          ))}
+        </div>
+      )}
 
-            <div className="space-y-2">
-              <Label className="text-slate-300">Description</Label>
-              <Textarea
-                value={editingHomeStay.description}
-                onChange={(e) => setEditingHomeStay({ ...editingHomeStay, description: e.target.value })}
-                className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                rows={3}
-                placeholder="Enter description"
-              />
-            </div>
+      {/* Create/Edit Dialog */}
+      <Dialog
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsFormOpen(false);
+            setEditingRoom(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingRoom ? "Edit Homestay" : "Add New Homestay"}
+            </DialogTitle>
+          </DialogHeader>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label className="text-slate-300">Min Price (₹)</Label>
-                <Input
-                  type="number"
-                  value={editingHomeStay.minPrice}
-                  onChange={(e) => setEditingHomeStay({ ...editingHomeStay, minPrice: parseInt(e.target.value) || 0 })}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Max Price (₹)</Label>
-                <Input
-                  type="number"
-                  value={editingHomeStay.maxPrice}
-                  onChange={(e) => setEditingHomeStay({ ...editingHomeStay, maxPrice: parseInt(e.target.value) || 0 })}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Fixed Price (₹)</Label>
-                <Input
-                  type="number"
-                  value={editingHomeStay.fixedPrice || ''}
-                  onChange={(e) => setEditingHomeStay({ ...editingHomeStay, fixedPrice: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-slate-300">Room Count</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={editingHomeStay.roomCount}
-                  onChange={(e) => {
-                    const newCount = Math.max(1, parseInt(e.target.value) || 1);
-                    setEditingHomeStay({ ...editingHomeStay, roomCount: newCount });
-                  }}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Distance from Temple (km)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={editingHomeStay.distanceFromTemple || ''}
-                  onChange={(e) => setEditingHomeStay({ ...editingHomeStay, distanceFromTemple: e.target.value ? parseFloat(e.target.value) : undefined })}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
-
-            {/* Per-Room Capacity Configuration */}
-            <div className="space-y-3">
-              <Label className="text-slate-300 flex items-center gap-2">
-                <Bed className="h-4 w-4" />
-                Room Capacity Configuration
-              </Label>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: editingHomeStay.roomCount || 1 }, (_, i) => i + 1).map((roomIndex) => {
-                  const roomData = editingHomeStay.roomAvailability?.find(r => r.roomIndex === roomIndex);
-                  const capacity = roomData?.personCapacity || 2;
-                  
-                  return (
-                    <div key={roomIndex} className="p-3 rounded-lg bg-slate-800/50 border border-slate-700">
-                      <Label className="text-xs text-slate-400 mb-2 block">Room {roomIndex}</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={capacity}
-                          onChange={(e) => updateRoomCapacity(roomIndex, parseInt(e.target.value) || 1)}
-                          className="glass-card bg-slate-800 border-slate-700 text-slate-100 text-sm"
-                        />
-                        <span className="text-xs text-slate-400 whitespace-nowrap">guests</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-slate-300">Partner Name</Label>
-                <Input
-                  value={editingHomeStay.partnerName}
-                  onChange={(e) => setEditingHomeStay({ ...editingHomeStay, partnerName: e.target.value })}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Partner Phone</Label>
-                <Input
-                  value={editingHomeStay.partnerPhoneNumber}
-                  onChange={(e) => setEditingHomeStay({ ...editingHomeStay, partnerPhoneNumber: e.target.value })}
-                  className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-slate-300">Google Maps Link</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+            <div className="space-y-1">
+              <Label>Owner / Partner Name</Label>
               <Input
-                value={editingHomeStay.googleMapsLink || ''}
-                onChange={(e) => setEditingHomeStay({ ...editingHomeStay, googleMapsLink: e.target.value })}
-                className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                placeholder="https://maps.app.goo.gl/..."
+                value={form.partnerName}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, partnerName: e.target.value }))
+                }
+                placeholder="e.g. Ravi Kumar"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-300">Owner Message</Label>
-              <Textarea
-                value={editingHomeStay.ownerMessage}
-                onChange={(e) => setEditingHomeStay({ ...editingHomeStay, ownerMessage: e.target.value })}
-                className="glass-card bg-slate-800 border-slate-700 text-slate-100"
-                rows={2}
-                placeholder="Welcome message from owner"
+            <div className="space-y-1">
+              <Label>Phone Number</Label>
+              <Input
+                value={form.partnerPhoneNumber}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, partnerPhoneNumber: e.target.value }))
+                }
+                placeholder="+91 9876543210"
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-              <div className="space-y-1">
-                <Label className="text-slate-300">Admin Override Availability</Label>
-                <p className="text-xs text-slate-400">Manually control availability regardless of bookings</p>
-              </div>
-              <Switch
-                checked={editingHomeStay.adminOverrideAvailability !== false}
-                onCheckedChange={(checked) => setEditingHomeStay({ ...editingHomeStay, adminOverrideAvailability: checked })}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4 border-t border-slate-700">
-              <Button
-                onClick={handleSave}
-                className="flex-1 gradient-saffron-gold text-white border-0 hover:opacity-90 gap-2"
+            <div className="space-y-1">
+              <Label>Room Type</Label>
+              <Select
+                value={form.roomType}
+                onValueChange={(v) => setForm((f) => ({ ...f, roomType: v }))}
               >
-                <Save className="h-4 w-4" />
-                Save HomeStay
-              </Button>
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800"
-              >
-                <X className="h-4 w-4" />
-                Cancel
-              </Button>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">Single</SelectItem>
+                  <SelectItem value="double">Double</SelectItem>
+                  <SelectItem value="suite">Suite</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {homeStays.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
-                <Home className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No homestays yet. Click "Add HomeStay" to create one.</p>
-              </div>
-            ) : (
-              homeStays.map((homeStay) => {
-                const hotel = hotels.find(h => h.id === homeStay.hotelId);
-                const stats = getHomeStayBookingStats(homeStay.id);
-                
-                return (
-                  <Card key={homeStay.id} className="glass-card bg-slate-800/40 border-slate-700 hover-lift">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-slate-100">{homeStay.name}</h3>
-                            <Badge className="gradient-saffron-gold text-white border-0">
-                              {hotel?.name || 'Unknown Hotel'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-slate-400 mb-3">{homeStay.description}</p>
-                          <div className="flex flex-wrap gap-4 text-sm text-slate-300">
-                            <span>Price: ₹{homeStay.fixedPrice || `${homeStay.minPrice}-${homeStay.maxPrice}`}</span>
-                            <span>Rooms: {homeStay.roomCount}</span>
-                            <span className="flex items-center gap-1">
-                              <Bed className="h-3 w-3" />
-                              Available: {stats.availableRooms} / {homeStay.roomCount}
-                            </span>
-                            {homeStay.distanceFromTemple && (
-                              <span>{homeStay.distanceFromTemple} km from temple</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            onClick={() => handleEdit(homeStay)}
-                            variant="outline"
-                            size="sm"
-                            className="border-slate-700 text-slate-300 hover:bg-slate-800"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(homeStay.id)}
-                            variant="outline"
-                            size="sm"
-                            className="border-red-900 text-red-400 hover:bg-red-950"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+
+            <div className="space-y-1">
+              <Label>Price per Night (₹)</Label>
+              <Input
+                type="number"
+                value={form.price}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, price: e.target.value }))
+                }
+                placeholder="500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Owner Type</Label>
+              <Select
+                value={form.ownerType}
+                onValueChange={(v) =>
+                  setForm((f) => ({
+                    ...f,
+                    ownerType: v as "admin" | "partner",
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="partner">Partner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {form.ownerType === "partner" && (
+              <>
+                <div className="space-y-1">
+                  <Label>Partner ID</Label>
+                  <Input
+                    value={form.partnerId}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, partnerId: e.target.value }))
+                    }
+                    placeholder="partner_001"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>
+                    Partner Password{" "}
+                    {editingRoom ? "(leave blank to keep)" : ""}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={form.partnerPassword}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          partnerPassword: e.target.value,
+                        }))
+                      }
+                      placeholder="Set login password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                {!editingRoom && (
+                  <div className="space-y-1">
+                    <Label>Room Passcode (optional)</Label>
+                    <Input
+                      value={form.passcode}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, passcode: e.target.value }))
+                      }
+                      placeholder="e.g. ROOM123"
+                    />
+                  </div>
+                )}
+              </>
             )}
+
+            <div className="space-y-1">
+              <Label>Distance from Temple (meters)</Label>
+              <Input
+                type="number"
+                value={form.distanceFromTemple}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, distanceFromTemple: e.target.value }))
+                }
+                placeholder="500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Hotel ID (optional)</Label>
+              <Input
+                value={form.hotelId}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, hotelId: e.target.value }))
+                }
+                placeholder="hotel_001"
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-1">
+              <Label>Description</Label>
+              <Textarea
+                value={form.description}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, description: e.target.value }))
+                }
+                placeholder="Describe the homestay..."
+                rows={3}
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-1">
+              <Label>Amenities (comma-separated)</Label>
+              <Input
+                value={form.amenities}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, amenities: e.target.value }))
+                }
+                placeholder="WiFi, AC, TV, Parking"
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-1">
+              <Label>Photo URLs (one per line)</Label>
+              <Textarea
+                value={form.photoUrls}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, photoUrls: e.target.value }))
+                }
+                placeholder="https://example.com/photo1.jpg"
+                rows={3}
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-1">
+              <Label>Google Maps Link (optional)</Label>
+              <Input
+                value={form.googleMapsLink}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, googleMapsLink: e.target.value }))
+                }
+                placeholder="https://maps.google.com/..."
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-1">
+              <Label>Owner Message (optional)</Label>
+              <Textarea
+                value={form.ownerMessage}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, ownerMessage: e.target.value }))
+                }
+                placeholder="A personal message from the owner..."
+                rows={2}
+              />
+            </div>
+
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <Switch
+                checked={form.availability}
+                onCheckedChange={(v) =>
+                  setForm((f) => ({ ...f, availability: v }))
+                }
+              />
+              <Label>Available for booking</Label>
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsFormOpen(false);
+                setEditingRoom(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="bg-primary text-primary-foreground"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : editingRoom ? (
+                "Save Changes"
+              ) : (
+                "Create Homestay"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deleteRoomId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteRoomId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Homestay</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this homestay? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

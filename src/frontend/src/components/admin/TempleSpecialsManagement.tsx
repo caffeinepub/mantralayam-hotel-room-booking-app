@@ -1,39 +1,60 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import { Sparkles, Plus, X, Eye, Save, Image as ImageIcon, Clock, Edit, Trash2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getTempleSpecials, saveTempleSpecials, type TempleSpecials, type TempleUpdate } from '../../lib/dataStorage';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Edit,
+  Eye,
+  GripVertical,
+  Image as ImageIcon,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  type TempleSpecials,
+  type TempleUpdate,
+  getTempleSpecials,
+  saveTempleSpecials,
+} from "../../lib/dataStorage";
 
 // Helper function to convert Google Drive/Photos links to direct image URLs
 function convertToDirectImageUrl(url: string): string {
   try {
     // Google Drive: https://drive.google.com/file/d/FILE_ID/view
-    if (url.includes('drive.google.com')) {
+    if (url.includes("drive.google.com")) {
       const fileIdMatch = url.match(/\/d\/([^/]+)/);
       if (fileIdMatch) {
         return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
       }
     }
-    
+
     // Google Photos: Extract direct link if possible
-    if (url.includes('photos.google.com') || url.includes('lh3.googleusercontent.com')) {
+    if (
+      url.includes("photos.google.com") ||
+      url.includes("lh3.googleusercontent.com")
+    ) {
       // If already a direct link, return as is
-      if (url.includes('googleusercontent.com')) {
+      if (url.includes("googleusercontent.com")) {
         return url;
       }
     }
-    
+
     // Return original URL if no conversion needed
     return url;
   } catch {
@@ -50,9 +71,9 @@ export default function TempleSpecialsManagement() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state for new/edit update
-  const [formImageLink, setFormImageLink] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formTime, setFormTime] = useState('');
+  const [formImageLink, setFormImageLink] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formTime, setFormTime] = useState("");
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -60,24 +81,25 @@ export default function TempleSpecialsManagement() {
       setSpecials(updated);
       setUpdates(updated.updates);
     };
-    window.addEventListener('templeSpecialsUpdated', handleUpdate);
-    return () => window.removeEventListener('templeSpecialsUpdated', handleUpdate);
+    window.addEventListener("templeSpecialsUpdated", handleUpdate);
+    return () =>
+      window.removeEventListener("templeSpecialsUpdated", handleUpdate);
   }, []);
 
   const handleAddNewUpdate = () => {
     if (!formImageLink.trim()) {
-      toast.error('Please enter an image URL');
+      toast.error("Please enter an image URL");
       return;
     }
     if (!formDescription.trim()) {
-      toast.error('Please enter a description');
+      toast.error("Please enter a description");
       return;
     }
 
     try {
       new URL(formImageLink);
       const convertedUrl = convertToDirectImageUrl(formImageLink.trim());
-      
+
       const newUpdate: TempleUpdate = {
         id: `update-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         imageLink: convertedUrl,
@@ -87,12 +109,12 @@ export default function TempleSpecialsManagement() {
       };
 
       setUpdates([...updates, newUpdate]);
-      setFormImageLink('');
-      setFormDescription('');
-      setFormTime('');
-      toast.success('Temple update added successfully');
+      setFormImageLink("");
+      setFormDescription("");
+      setFormTime("");
+      toast.success("Temple update added successfully");
     } catch {
-      toast.error('Please enter a valid image URL');
+      toast.error("Please enter a valid image URL");
     }
   };
 
@@ -106,67 +128,84 @@ export default function TempleSpecialsManagement() {
   const handleSaveEdit = () => {
     if (!editingUpdate) return;
     if (!formImageLink.trim()) {
-      toast.error('Please enter an image URL');
+      toast.error("Please enter an image URL");
       return;
     }
     if (!formDescription.trim()) {
-      toast.error('Please enter a description');
+      toast.error("Please enter a description");
       return;
     }
 
     try {
       new URL(formImageLink);
       const convertedUrl = convertToDirectImageUrl(formImageLink.trim());
-      
-      const updatedList = updates.map(u => 
-        u.id === editingUpdate.id 
-          ? { ...u, imageLink: convertedUrl, description: formDescription.trim(), time: formTime.trim() }
-          : u
+
+      const updatedList = updates.map((u) =>
+        u.id === editingUpdate.id
+          ? {
+              ...u,
+              imageLink: convertedUrl,
+              description: formDescription.trim(),
+              time: formTime.trim(),
+            }
+          : u,
       );
 
       setUpdates(updatedList);
       setEditingUpdate(null);
-      setFormImageLink('');
-      setFormDescription('');
-      setFormTime('');
-      toast.success('Temple update edited successfully');
+      setFormImageLink("");
+      setFormDescription("");
+      setFormTime("");
+      toast.success("Temple update edited successfully");
     } catch {
-      toast.error('Please enter a valid image URL');
+      toast.error("Please enter a valid image URL");
     }
   };
 
   const handleCancelEdit = () => {
     setEditingUpdate(null);
-    setFormImageLink('');
-    setFormDescription('');
-    setFormTime('');
+    setFormImageLink("");
+    setFormDescription("");
+    setFormTime("");
   };
 
   const handleDeleteUpdate = (id: string) => {
-    const updatedList = updates.filter(u => u.id !== id).map((u, index) => ({ ...u, order: index + 1 }));
+    const updatedList = updates
+      .filter((u) => u.id !== id)
+      .map((u, index) => ({ ...u, order: index + 1 }));
     setUpdates(updatedList);
-    toast.success('Temple update deleted');
+    toast.success("Temple update deleted");
   };
 
   const handleMoveUp = (index: number) => {
     if (index === 0) return;
     const newUpdates = [...updates];
-    [newUpdates[index - 1], newUpdates[index]] = [newUpdates[index], newUpdates[index - 1]];
-    newUpdates.forEach((u, i) => u.order = i + 1);
+    [newUpdates[index - 1], newUpdates[index]] = [
+      newUpdates[index],
+      newUpdates[index - 1],
+    ];
+    for (const [i, u] of newUpdates.entries()) {
+      u.order = i + 1;
+    }
     setUpdates(newUpdates);
   };
 
-  const handleMoveDown = (index: number) => {
+  const _handleMoveDown = (index: number) => {
     if (index === updates.length - 1) return;
     const newUpdates = [...updates];
-    [newUpdates[index], newUpdates[index + 1]] = [newUpdates[index + 1], newUpdates[index]];
-    newUpdates.forEach((u, i) => u.order = i + 1);
+    [newUpdates[index], newUpdates[index + 1]] = [
+      newUpdates[index + 1],
+      newUpdates[index],
+    ];
+    for (const [i, u] of newUpdates.entries()) {
+      u.order = i + 1;
+    }
     setUpdates(newUpdates);
   };
 
   const handleSaveAll = () => {
     if (updates.length === 0) {
-      toast.error('Please add at least one temple update');
+      toast.error("Please add at least one temple update");
       return;
     }
 
@@ -179,12 +218,14 @@ export default function TempleSpecialsManagement() {
     saveTempleSpecials(updatedSpecials);
     setSpecials(updatedSpecials);
     setIsSaving(false);
-    toast.success('All temple updates saved successfully! Changes are now live on the Home Page.');
+    toast.success(
+      "All temple updates saved successfully! Changes are now live on the Home Page.",
+    );
   };
 
   const handlePreview = () => {
     if (updates.length === 0) {
-      toast.error('No updates to preview');
+      toast.error("No updates to preview");
       return;
     }
     setPreviewIndex(0);
@@ -208,8 +249,12 @@ export default function TempleSpecialsManagement() {
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-2xl text-slate-100">Temple Specials Management</CardTitle>
-              <p className="text-sm text-slate-400">Manage multiple temple updates with carousel display</p>
+              <CardTitle className="text-2xl text-slate-100">
+                Temple Specials Management
+              </CardTitle>
+              <p className="text-sm text-slate-400">
+                Manage multiple temple updates with carousel display
+              </p>
             </div>
           </div>
         </CardHeader>
@@ -218,8 +263,12 @@ export default function TempleSpecialsManagement() {
           <Card className="glass-card bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                {editingUpdate ? <Edit className="h-5 w-5 text-accent" /> : <Plus className="h-5 w-5 text-primary" />}
-                {editingUpdate ? 'Edit Temple Update' : 'Add New Temple Update'}
+                {editingUpdate ? (
+                  <Edit className="h-5 w-5 text-accent" />
+                ) : (
+                  <Plus className="h-5 w-5 text-primary" />
+                )}
+                {editingUpdate ? "Edit Temple Update" : "Add New Temple Update"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -311,7 +360,10 @@ export default function TempleSpecialsManagement() {
             {updates.length > 0 ? (
               <div className="space-y-3">
                 {updates.map((update, index) => (
-                  <Card key={update.id} className="glass-card bg-slate-800/50 border-slate-700 group hover:border-primary/50 transition-smooth">
+                  <Card
+                    key={update.id}
+                    className="glass-card bg-slate-800/50 border-slate-700 group hover:border-primary/50 transition-smooth"
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
                         {/* Reorder Controls */}
@@ -325,7 +377,9 @@ export default function TempleSpecialsManagement() {
                           >
                             <GripVertical className="h-4 w-4" />
                           </Button>
-                          <span className="text-xs text-slate-500 text-center">{index + 1}</span>
+                          <span className="text-xs text-slate-500 text-center">
+                            {index + 1}
+                          </span>
                         </div>
 
                         {/* Preview Image */}
@@ -335,14 +389,17 @@ export default function TempleSpecialsManagement() {
                             alt={`Update ${index + 1}`}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/128x72?text=Error';
+                              (e.target as HTMLImageElement).src =
+                                "https://via.placeholder.com/128x72?text=Error";
                             }}
                           />
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0 space-y-2">
-                          <p className="text-sm text-slate-300 line-clamp-2">{update.description}</p>
+                          <p className="text-sm text-slate-300 line-clamp-2">
+                            {update.description}
+                          </p>
                           {update.time && (
                             <div className="flex items-center gap-2 text-xs text-slate-400">
                               <Clock className="h-3 w-3" />
@@ -378,8 +435,12 @@ export default function TempleSpecialsManagement() {
             ) : (
               <div className="p-8 rounded-lg bg-slate-800/30 border border-slate-700/50 text-center">
                 <Sparkles className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-                <p className="text-sm text-slate-400">No temple updates added yet</p>
-                <p className="text-xs text-slate-500 mt-1">Add your first update using the form above</p>
+                <p className="text-sm text-slate-400">
+                  No temple updates added yet
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Add your first update using the form above
+                </p>
               </div>
             )}
           </div>
@@ -387,12 +448,13 @@ export default function TempleSpecialsManagement() {
           {/* Last Updated Info */}
           <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
             <p className="text-sm text-slate-400">
-              Last updated: {new Date(specials.lastUpdated).toLocaleString('en-IN', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
+              Last updated:{" "}
+              {new Date(specials.lastUpdated).toLocaleString("en-IN", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </p>
           </div>
@@ -405,7 +467,7 @@ export default function TempleSpecialsManagement() {
               className="gradient-saffron-gold text-white border-0 hover:opacity-90 flex-1"
             >
               <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save All Changes'}
+              {isSaving ? "Saving..." : "Save All Changes"}
             </Button>
             <Button
               onClick={handlePreview}
@@ -429,7 +491,8 @@ export default function TempleSpecialsManagement() {
               Temple Specials Carousel Preview
             </DialogTitle>
             <DialogDescription className="text-slate-400">
-              Preview how the temple updates will appear on the Home Page with automatic rotation
+              Preview how the temple updates will appear on the Home Page with
+              automatic rotation
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 mt-4">
@@ -441,10 +504,11 @@ export default function TempleSpecialsManagement() {
                     alt={`Preview ${previewIndex + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1280x720?text=Error+Loading';
+                      (e.target as HTMLImageElement).src =
+                        "https://via.placeholder.com/1280x720?text=Error+Loading";
                     }}
                   />
-                  
+
                   {/* Bottom Overlay Preview */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-6">
                     <div className="glass-card bg-white/10 backdrop-blur-md border-white/20 rounded-xl p-4 shadow-saffron-lg">
@@ -457,11 +521,13 @@ export default function TempleSpecialsManagement() {
                             </p>
                           </div>
                         </div>
-                        
+
                         {updates[previewIndex].time && (
                           <div className="flex items-center gap-2 text-white/90 text-sm">
                             <Clock className="h-4 w-4 text-accent" />
-                            <span className="font-medium">{updates[previewIndex].time}</span>
+                            <span className="font-medium">
+                              {updates[previewIndex].time}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -472,26 +538,29 @@ export default function TempleSpecialsManagement() {
                   {updates.length > 1 && (
                     <>
                       <button
+                        type="button"
                         onClick={prevPreview}
                         className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-smooth"
                       >
                         <ChevronLeft className="h-6 w-6 text-primary" />
                       </button>
                       <button
+                        type="button"
                         onClick={nextPreview}
                         className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-smooth"
                       >
                         <ChevronRight className="h-6 w-6 text-primary" />
                       </button>
                       <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2">
-                        {updates.map((_, index) => (
+                        {updates.map((update, index) => (
                           <button
-                            key={index}
+                            type="button"
+                            key={update.id || String(index)}
                             onClick={() => setPreviewIndex(index)}
                             className={`w-2 h-2 rounded-full transition-smooth ${
                               index === previewIndex
-                                ? 'bg-white w-8'
-                                : 'bg-white/50 hover:bg-white/75'
+                                ? "bg-white w-8"
+                                : "bg-white/50 hover:bg-white/75"
                             }`}
                           />
                         ))}

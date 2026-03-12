@@ -53,6 +53,23 @@ export const Hotel = IDL.Record({
   'address' : IDL.Text,
   'photos' : IDL.Vec(ExternalBlob),
 });
+export const TempleSpecial = IDL.Record({
+  'id' : IDL.Text,
+  'date' : IDL.Text,
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+  'image' : ExternalBlob,
+  'price' : IDL.Nat,
+});
+export const Time = IDL.Int;
+export const PartnerProfile = IDL.Record({
+  'id' : IDL.Text,
+  'contact' : IDL.Text,
+  'password' : IDL.Text,
+  'name' : IDL.Text,
+  'registrationDate' : Time,
+  'rooms' : IDL.Vec(IDL.Text),
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -63,7 +80,6 @@ export const BookingStatus = IDL.Variant({
   'confirmed' : IDL.Null,
   'pendingConfirmation' : IDL.Null,
 });
-export const Time = IDL.Int;
 export const GuestProfile = IDL.Record({
   'id' : IDL.Text,
   'contact' : IDL.Text,
@@ -96,13 +112,6 @@ export const AdminProfile = IDL.Record({
   'name' : IDL.Text,
   'role' : UserRole,
   'adminPassword' : IDL.Text,
-});
-export const PartnerProfile = IDL.Record({
-  'id' : IDL.Text,
-  'contact' : IDL.Text,
-  'name' : IDL.Text,
-  'registrationDate' : Time,
-  'rooms' : IDL.Vec(IDL.Text),
 });
 export const RoomPasscodeConfig = IDL.Record({
   'passcode' : IDL.Text,
@@ -190,9 +199,11 @@ export const idlService = IDL.Service({
       [],
     ),
   'addHotel' : IDL.Func([Hotel], [], []),
+  'addTempleSpecial' : IDL.Func([TempleSpecial], [], []),
+  'adminUpdatePartnerProfile' : IDL.Func([PartnerProfile], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'authenticateAdmin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-  'authenticatePartnerWithPasscode' : IDL.Func([IDL.Text], [IDL.Text], []),
+  'authenticatePartnerWithPassword' : IDL.Func([IDL.Text], [IDL.Bool], []),
   'cancelBooking' : IDL.Func([IDL.Text], [], []),
   'checkAdminAuthentication' : IDL.Func([], [IDL.Bool], ['query']),
   'checkPartnerAuthentication' : IDL.Func([], [IDL.Bool], ['query']),
@@ -220,6 +231,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(RoomPasscodeConfig)],
       ['query'],
     ),
+  'getAuthenticatedPartnerId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   'getAvailableHomeStays' : IDL.Func([], [IDL.Vec(HomeStay)], ['query']),
   'getAvailableHotels' : IDL.Func([], [IDL.Vec(Hotel)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -231,11 +243,6 @@ export const idlService = IDL.Service({
   'getHotels' : IDL.Func([], [IDL.Vec(Hotel)], ['query']),
   'getMyBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
   'getNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
-  'getPartnerAuthenticatedRoomId' : IDL.Func(
-      [],
-      [IDL.Opt(IDL.Text)],
-      ['query'],
-    ),
   'getPartnerNotifications' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(Notification)],
@@ -249,6 +256,7 @@ export const idlService = IDL.Service({
   'getPartnerRooms' : IDL.Func([IDL.Text], [IDL.Vec(HomeStay)], ['query']),
   'getRoomPasscode' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+  'getTempleSpecials' : IDL.Func([], [IDL.Vec(TempleSpecial)], ['query']),
   'getUnreadNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -330,6 +338,23 @@ export const idlFactory = ({ IDL }) => {
     'address' : IDL.Text,
     'photos' : IDL.Vec(ExternalBlob),
   });
+  const TempleSpecial = IDL.Record({
+    'id' : IDL.Text,
+    'date' : IDL.Text,
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+    'image' : ExternalBlob,
+    'price' : IDL.Nat,
+  });
+  const Time = IDL.Int;
+  const PartnerProfile = IDL.Record({
+    'id' : IDL.Text,
+    'contact' : IDL.Text,
+    'password' : IDL.Text,
+    'name' : IDL.Text,
+    'registrationDate' : Time,
+    'rooms' : IDL.Vec(IDL.Text),
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -340,7 +365,6 @@ export const idlFactory = ({ IDL }) => {
     'confirmed' : IDL.Null,
     'pendingConfirmation' : IDL.Null,
   });
-  const Time = IDL.Int;
   const GuestProfile = IDL.Record({
     'id' : IDL.Text,
     'contact' : IDL.Text,
@@ -373,13 +397,6 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'role' : UserRole,
     'adminPassword' : IDL.Text,
-  });
-  const PartnerProfile = IDL.Record({
-    'id' : IDL.Text,
-    'contact' : IDL.Text,
-    'name' : IDL.Text,
-    'registrationDate' : Time,
-    'rooms' : IDL.Vec(IDL.Text),
   });
   const RoomPasscodeConfig = IDL.Record({
     'passcode' : IDL.Text,
@@ -464,9 +481,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'addHotel' : IDL.Func([Hotel], [], []),
+    'addTempleSpecial' : IDL.Func([TempleSpecial], [], []),
+    'adminUpdatePartnerProfile' : IDL.Func([PartnerProfile], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'authenticateAdmin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-    'authenticatePartnerWithPasscode' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'authenticatePartnerWithPassword' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'cancelBooking' : IDL.Func([IDL.Text], [], []),
     'checkAdminAuthentication' : IDL.Func([], [IDL.Bool], ['query']),
     'checkPartnerAuthentication' : IDL.Func([], [IDL.Bool], ['query']),
@@ -498,6 +517,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(RoomPasscodeConfig)],
         ['query'],
       ),
+    'getAuthenticatedPartnerId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     'getAvailableHomeStays' : IDL.Func([], [IDL.Vec(HomeStay)], ['query']),
     'getAvailableHotels' : IDL.Func([], [IDL.Vec(Hotel)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -517,11 +537,6 @@ export const idlFactory = ({ IDL }) => {
     'getHotels' : IDL.Func([], [IDL.Vec(Hotel)], ['query']),
     'getMyBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
     'getNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
-    'getPartnerAuthenticatedRoomId' : IDL.Func(
-        [],
-        [IDL.Opt(IDL.Text)],
-        ['query'],
-      ),
     'getPartnerNotifications' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(Notification)],
@@ -535,6 +550,7 @@ export const idlFactory = ({ IDL }) => {
     'getPartnerRooms' : IDL.Func([IDL.Text], [IDL.Vec(HomeStay)], ['query']),
     'getRoomPasscode' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+    'getTempleSpecials' : IDL.Func([], [IDL.Vec(TempleSpecial)], ['query']),
     'getUnreadNotifications' : IDL.Func([], [IDL.Vec(Notification)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],

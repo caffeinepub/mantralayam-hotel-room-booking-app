@@ -8,11 +8,11 @@ export interface Customer {
   updatedAt: string;
 }
 
-const STORAGE_KEY = 'mantralayam_customers';
+const STORAGE_KEY = "mantralayam_customers";
 
 // Normalize phone number for consistent keying (remove spaces, dashes, etc.)
 function normalizePhone(phone: string): string {
-  return phone.replace(/[\s\-\(\)]/g, '').trim();
+  return phone.replace(/[\s\-\(\)]/g, "").trim();
 }
 
 // Generate deterministic customer ID from phone number
@@ -28,7 +28,7 @@ export function getAllCustomers(): Customer[] {
     const customers = JSON.parse(data);
     return Array.isArray(customers) ? customers : [];
   } catch (error) {
-    console.error('Error loading customers:', error);
+    console.error("Error loading customers:", error);
     return [];
   }
 }
@@ -36,7 +36,7 @@ export function getAllCustomers(): Customer[] {
 // Get customer by ID
 export function getCustomerById(id: string): Customer | null {
   const customers = getAllCustomers();
-  return customers.find(c => c.id === id) || null;
+  return customers.find((c) => c.id === id) || null;
 }
 
 // Get customer by phone number
@@ -50,11 +50,11 @@ export function upsertCustomer(name: string, phone: string): Customer {
   const customers = getAllCustomers();
   const id = generateCustomerId(phone);
   const now = new Date().toISOString();
-  
-  const existingIndex = customers.findIndex(c => c.id === id);
-  
+
+  const existingIndex = customers.findIndex((c) => c.id === id);
+
   let customer: Customer;
-  
+
   if (existingIndex >= 0) {
     // Update existing customer
     customer = {
@@ -75,24 +75,27 @@ export function upsertCustomer(name: string, phone: string): Customer {
     };
     customers.push(customer);
   }
-  
+
   saveCustomers(customers);
   return customer;
 }
 
 // Update customer
-export function updateCustomer(id: string, updates: Partial<Pick<Customer, 'name' | 'phone'>>): Customer | null {
+export function updateCustomer(
+  id: string,
+  updates: Partial<Pick<Customer, "name" | "phone">>,
+): Customer | null {
   const customers = getAllCustomers();
-  const index = customers.findIndex(c => c.id === id);
-  
+  const index = customers.findIndex((c) => c.id === id);
+
   if (index < 0) return null;
-  
+
   const customer = {
     ...customers[index],
     ...updates,
     updatedAt: new Date().toISOString(),
   };
-  
+
   customers[index] = customer;
   saveCustomers(customers);
   return customer;
@@ -101,10 +104,10 @@ export function updateCustomer(id: string, updates: Partial<Pick<Customer, 'name
 // Delete customer
 export function deleteCustomer(id: string): boolean {
   const customers = getAllCustomers();
-  const filtered = customers.filter(c => c.id !== id);
-  
+  const filtered = customers.filter((c) => c.id !== id);
+
   if (filtered.length === customers.length) return false;
-  
+
   saveCustomers(filtered);
   return true;
 }
@@ -114,9 +117,11 @@ function saveCustomers(customers: Customer[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customers));
     // Dispatch update event for reactive UI
-    window.dispatchEvent(new CustomEvent('customersUpdated', { detail: customers }));
+    window.dispatchEvent(
+      new CustomEvent("customersUpdated", { detail: customers }),
+    );
   } catch (error) {
-    console.error('Error saving customers:', error);
+    console.error("Error saving customers:", error);
   }
 }
 
@@ -124,11 +129,11 @@ function saveCustomers(customers: Customer[]): void {
 export function searchCustomers(query: string): Customer[] {
   const customers = getAllCustomers();
   const lowerQuery = query.toLowerCase().trim();
-  
+
   if (!lowerQuery) return customers;
-  
-  return customers.filter(c => 
-    c.name.toLowerCase().includes(lowerQuery) ||
-    c.phone.includes(lowerQuery)
+
+  return customers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(lowerQuery) || c.phone.includes(lowerQuery),
   );
 }

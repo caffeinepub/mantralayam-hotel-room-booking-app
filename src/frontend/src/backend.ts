@@ -140,12 +140,13 @@ export interface http_request_result {
     body: Uint8Array;
     headers: Array<http_header>;
 }
-export interface AdminProfile {
+export interface TempleSpecial {
     id: string;
-    adminKey: string;
+    date: string;
     name: string;
-    role: UserRole;
-    adminPassword: string;
+    description: string;
+    image: ExternalBlob;
+    price: bigint;
 }
 export interface ShoppingItem {
     productName: string;
@@ -153,6 +154,13 @@ export interface ShoppingItem {
     quantity: bigint;
     priceInCents: bigint;
     productDescription: string;
+}
+export interface AdminProfile {
+    id: string;
+    adminKey: string;
+    name: string;
+    role: UserRole;
+    adminPassword: string;
 }
 export interface Hotel {
     id: string;
@@ -182,6 +190,7 @@ export interface GuestProfile {
 export interface PartnerProfile {
     id: string;
     contact: string;
+    password: string;
     name: string;
     registrationDate: Time;
     rooms: Array<string>;
@@ -257,9 +266,11 @@ export interface backendInterface {
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     addHomeStayWithOptionalPasscode(homeStay: HomeStay, passcode: string | null): Promise<void>;
     addHotel(hotel: Hotel): Promise<void>;
+    addTempleSpecial(special: TempleSpecial): Promise<void>;
+    adminUpdatePartnerProfile(profile: PartnerProfile): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     authenticateAdmin(key: string, password: string): Promise<boolean>;
-    authenticatePartnerWithPasscode(passcode: string): Promise<string>;
+    authenticatePartnerWithPassword(password: string): Promise<boolean>;
     cancelBooking(bookingId: string): Promise<void>;
     checkAdminAuthentication(): Promise<boolean>;
     checkPartnerAuthentication(): Promise<boolean>;
@@ -275,6 +286,7 @@ export interface backendInterface {
     getAllBookings(): Promise<Array<Booking>>;
     getAllPartnerProfiles(): Promise<Array<PartnerProfile>>;
     getAllRoomPasscodes(): Promise<Array<RoomPasscodeConfig>>;
+    getAuthenticatedPartnerId(): Promise<string | null>;
     getAvailableHomeStays(): Promise<Array<HomeStay>>;
     getAvailableHotels(): Promise<Array<Hotel>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -286,12 +298,12 @@ export interface backendInterface {
     getHotels(): Promise<Array<Hotel>>;
     getMyBookings(): Promise<Array<Booking>>;
     getNotifications(): Promise<Array<Notification>>;
-    getPartnerAuthenticatedRoomId(): Promise<string | null>;
     getPartnerNotifications(partnerId: string): Promise<Array<Notification>>;
     getPartnerProfile(partnerId: string): Promise<PartnerProfile | null>;
     getPartnerRooms(partnerId: string): Promise<Array<HomeStay>>;
     getRoomPasscode(roomId: string): Promise<string | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
+    getTempleSpecials(): Promise<Array<TempleSpecial>>;
     getUnreadNotifications(): Promise<Array<Notification>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     hasCustomerLoggedInBefore(): Promise<boolean>;
@@ -316,7 +328,7 @@ export interface backendInterface {
     updatePartnerProfile(profile: PartnerProfile): Promise<void>;
     updatePartnerRoomDetails(update: PartnerRoomUpdate): Promise<void>;
 }
-import type { AdminProfile as _AdminProfile, Booking as _Booking, BookingStatus as _BookingStatus, ExternalBlob as _ExternalBlob, GuestProfile as _GuestProfile, HomeStay as _HomeStay, Hotel as _Hotel, Notification as _Notification, PartnerProfile as _PartnerProfile, RoomType as _RoomType, StripeSessionStatus as _StripeSessionStatus, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { AdminProfile as _AdminProfile, Booking as _Booking, BookingStatus as _BookingStatus, ExternalBlob as _ExternalBlob, GuestProfile as _GuestProfile, HomeStay as _HomeStay, Hotel as _Hotel, Notification as _Notification, PartnerProfile as _PartnerProfile, RoomType as _RoomType, StripeSessionStatus as _StripeSessionStatus, TempleSpecial as _TempleSpecial, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -431,17 +443,45 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
+    async addTempleSpecial(arg0: TempleSpecial): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n18(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.addTempleSpecial(await to_candid_TempleSpecial_n18(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n18(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.addTempleSpecial(await to_candid_TempleSpecial_n18(this._uploadFile, this._downloadFile, arg0));
+            return result;
+        }
+    }
+    async adminUpdatePartnerProfile(arg0: PartnerProfile): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminUpdatePartnerProfile(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminUpdatePartnerProfile(arg0);
+            return result;
+        }
+    }
+    async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n20(this._uploadFile, this._downloadFile, arg1));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n20(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -459,17 +499,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async authenticatePartnerWithPasscode(arg0: string): Promise<string> {
+    async authenticatePartnerWithPassword(arg0: string): Promise<boolean> {
         if (this.processError) {
             try {
-                const result = await this.actor.authenticatePartnerWithPasscode(arg0);
+                const result = await this.actor.authenticatePartnerWithPassword(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.authenticatePartnerWithPasscode(arg0);
+            const result = await this.actor.authenticatePartnerWithPassword(arg0);
             return result;
         }
     }
@@ -532,14 +572,14 @@ export class Backend implements backendInterface {
     async createBooking(arg0: Booking): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.createBooking(to_candid_Booking_n20(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.createBooking(to_candid_Booking_n22(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createBooking(to_candid_Booking_n20(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.createBooking(to_candid_Booking_n22(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -632,10 +672,10 @@ export class Backend implements backendInterface {
             try {
                 const result = await this.actor.getAdminDashboardData();
                 return [
-                    from_candid_AdminProfile_n24(this._uploadFile, this._downloadFile, result[0]),
-                    from_candid_vec_n28(this._uploadFile, this._downloadFile, result[1]),
-                    from_candid_vec_n33(this._uploadFile, this._downloadFile, result[2]),
-                    from_candid_vec_n40(this._uploadFile, this._downloadFile, result[3])
+                    from_candid_AdminProfile_n26(this._uploadFile, this._downloadFile, result[0]),
+                    from_candid_vec_n30(this._uploadFile, this._downloadFile, result[1]),
+                    from_candid_vec_n35(this._uploadFile, this._downloadFile, result[2]),
+                    from_candid_vec_n42(this._uploadFile, this._downloadFile, result[3])
                 ];
             } catch (e) {
                 this.processError(e);
@@ -644,10 +684,10 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getAdminDashboardData();
             return [
-                from_candid_AdminProfile_n24(this._uploadFile, this._downloadFile, result[0]),
-                from_candid_vec_n28(this._uploadFile, this._downloadFile, result[1]),
-                from_candid_vec_n33(this._uploadFile, this._downloadFile, result[2]),
-                from_candid_vec_n40(this._uploadFile, this._downloadFile, result[3])
+                from_candid_AdminProfile_n26(this._uploadFile, this._downloadFile, result[0]),
+                from_candid_vec_n30(this._uploadFile, this._downloadFile, result[1]),
+                from_candid_vec_n35(this._uploadFile, this._downloadFile, result[2]),
+                from_candid_vec_n42(this._uploadFile, this._downloadFile, result[3])
             ];
         }
     }
@@ -655,14 +695,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getAllBookings();
-                return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n42(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAllBookings();
-            return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n42(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllPartnerProfiles(): Promise<Array<PartnerProfile>> {
@@ -693,74 +733,88 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAuthenticatedPartnerId(): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAuthenticatedPartnerId();
+                return from_candid_opt_n39(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAuthenticatedPartnerId();
+            return from_candid_opt_n39(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getAvailableHomeStays(): Promise<Array<HomeStay>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAvailableHomeStays();
-                return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n35(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAvailableHomeStays();
-            return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n35(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAvailableHotels(): Promise<Array<Hotel>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAvailableHotels();
-                return from_candid_vec_n28(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n30(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAvailableHotels();
-            return from_candid_vec_n28(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n30(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n45(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n47(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n45(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n47(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n26(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n28(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n26(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n28(this._uploadFile, this._downloadFile, result);
         }
     }
     async getGuestProfile(arg0: string): Promise<GuestProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getGuestProfile(arg0);
-                return from_candid_opt_n46(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n48(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getGuestProfile(arg0);
-            return from_candid_opt_n46(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n48(this._uploadFile, this._downloadFile, result);
         }
     }
     async getHomeStayAmenities(arg0: string): Promise<Array<string>> {
@@ -781,14 +835,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getHomeStayDetails(arg0);
-                return from_candid_opt_n47(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n49(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getHomeStayDetails(arg0);
-            return from_candid_opt_n47(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n49(this._uploadFile, this._downloadFile, result);
         }
     }
     async getHotelAmenities(arg0: string): Promise<Array<string>> {
@@ -809,154 +863,154 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getHotels();
-                return from_candid_vec_n28(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n30(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getHotels();
-            return from_candid_vec_n28(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n30(this._uploadFile, this._downloadFile, result);
         }
     }
     async getMyBookings(): Promise<Array<Booking>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getMyBookings();
-                return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n42(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getMyBookings();
-            return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n42(this._uploadFile, this._downloadFile, result);
         }
     }
     async getNotifications(): Promise<Array<Notification>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getNotifications();
-                return from_candid_vec_n48(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n50(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getNotifications();
-            return from_candid_vec_n48(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getPartnerAuthenticatedRoomId(): Promise<string | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getPartnerAuthenticatedRoomId();
-                return from_candid_opt_n37(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getPartnerAuthenticatedRoomId();
-            return from_candid_opt_n37(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n50(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPartnerNotifications(arg0: string): Promise<Array<Notification>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getPartnerNotifications(arg0);
-                return from_candid_vec_n48(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n50(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getPartnerNotifications(arg0);
-            return from_candid_vec_n48(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n50(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPartnerProfile(arg0: string): Promise<PartnerProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getPartnerProfile(arg0);
-                return from_candid_opt_n52(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n54(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getPartnerProfile(arg0);
-            return from_candid_opt_n52(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n54(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPartnerRooms(arg0: string): Promise<Array<HomeStay>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getPartnerRooms(arg0);
-                return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n35(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getPartnerRooms(arg0);
-            return from_candid_vec_n33(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n35(this._uploadFile, this._downloadFile, result);
         }
     }
     async getRoomPasscode(arg0: string): Promise<string | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getRoomPasscode(arg0);
-                return from_candid_opt_n37(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n39(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getRoomPasscode(arg0);
-            return from_candid_opt_n37(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n39(this._uploadFile, this._downloadFile, result);
         }
     }
     async getStripeSessionStatus(arg0: string): Promise<StripeSessionStatus> {
         if (this.processError) {
             try {
                 const result = await this.actor.getStripeSessionStatus(arg0);
-                return from_candid_StripeSessionStatus_n53(this._uploadFile, this._downloadFile, result);
+                return from_candid_StripeSessionStatus_n55(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getStripeSessionStatus(arg0);
-            return from_candid_StripeSessionStatus_n53(this._uploadFile, this._downloadFile, result);
+            return from_candid_StripeSessionStatus_n55(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getTempleSpecials(): Promise<Array<TempleSpecial>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTempleSpecials();
+                return from_candid_vec_n58(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTempleSpecials();
+            return from_candid_vec_n58(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUnreadNotifications(): Promise<Array<Notification>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUnreadNotifications();
-                return from_candid_vec_n48(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n50(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUnreadNotifications();
-            return from_candid_vec_n48(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n50(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n45(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n47(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n45(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n47(this._uploadFile, this._downloadFile, result);
         }
     }
     async hasCustomerLoggedInBefore(): Promise<boolean> {
@@ -1172,14 +1226,14 @@ export class Backend implements backendInterface {
     async updateBooking(arg0: Booking): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateBooking(to_candid_Booking_n20(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.updateBooking(to_candid_Booking_n22(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateBooking(to_candid_Booking_n20(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.updateBooking(to_candid_Booking_n22(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -1254,52 +1308,55 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_AdminProfile_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AdminProfile): AdminProfile {
-    return from_candid_record_n25(_uploadFile, _downloadFile, value);
+function from_candid_AdminProfile_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AdminProfile): AdminProfile {
+    return from_candid_record_n27(_uploadFile, _downloadFile, value);
 }
-function from_candid_BookingStatus_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _BookingStatus): BookingStatus {
-    return from_candid_variant_n44(_uploadFile, _downloadFile, value);
+function from_candid_BookingStatus_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _BookingStatus): BookingStatus {
+    return from_candid_variant_n46(_uploadFile, _downloadFile, value);
 }
-function from_candid_Booking_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Booking): Booking {
-    return from_candid_record_n42(_uploadFile, _downloadFile, value);
+function from_candid_Booking_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Booking): Booking {
+    return from_candid_record_n44(_uploadFile, _downloadFile, value);
 }
-async function from_candid_ExternalBlob_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
+async function from_candid_ExternalBlob_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
 }
-async function from_candid_HomeStay_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HomeStay): Promise<HomeStay> {
-    return await from_candid_record_n35(_uploadFile, _downloadFile, value);
+async function from_candid_HomeStay_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HomeStay): Promise<HomeStay> {
+    return await from_candid_record_n37(_uploadFile, _downloadFile, value);
 }
-async function from_candid_Hotel_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Hotel): Promise<Hotel> {
-    return await from_candid_record_n30(_uploadFile, _downloadFile, value);
+async function from_candid_Hotel_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Hotel): Promise<Hotel> {
+    return await from_candid_record_n32(_uploadFile, _downloadFile, value);
 }
-function from_candid_Notification_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Notification): Notification {
-    return from_candid_record_n50(_uploadFile, _downloadFile, value);
+function from_candid_Notification_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Notification): Notification {
+    return from_candid_record_n52(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoomType_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RoomType): RoomType {
-    return from_candid_variant_n39(_uploadFile, _downloadFile, value);
+function from_candid_RoomType_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RoomType): RoomType {
+    return from_candid_variant_n41(_uploadFile, _downloadFile, value);
 }
-function from_candid_StripeSessionStatus_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
-    return from_candid_variant_n54(_uploadFile, _downloadFile, value);
+function from_candid_StripeSessionStatus_n55(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
+    return from_candid_variant_n56(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n27(_uploadFile, _downloadFile, value);
+async function from_candid_TempleSpecial_n59(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TempleSpecial): Promise<TempleSpecial> {
+    return await from_candid_record_n60(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n29(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+function from_candid_opt_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_GuestProfile]): GuestProfile | null {
+function from_candid_opt_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_GuestProfile]): GuestProfile | null {
     return value.length === 0 ? null : value[0];
 }
-async function from_candid_opt_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_HomeStay]): Promise<HomeStay | null> {
-    return value.length === 0 ? null : await from_candid_HomeStay_n34(_uploadFile, _downloadFile, value[0]);
+async function from_candid_opt_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_HomeStay]): Promise<HomeStay | null> {
+    return value.length === 0 ? null : await from_candid_HomeStay_n36(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PartnerProfile]): PartnerProfile | null {
+function from_candid_opt_n54(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PartnerProfile]): PartnerProfile | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
@@ -1308,7 +1365,7 @@ function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_record_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     adminKey: string;
     name: string;
@@ -1325,11 +1382,11 @@ function from_candid_record_n25(_uploadFile: (file: ExternalBlob) => Promise<Uin
         id: value.id,
         adminKey: value.adminKey,
         name: value.name,
-        role: from_candid_UserRole_n26(_uploadFile, _downloadFile, value.role),
+        role: from_candid_UserRole_n28(_uploadFile, _downloadFile, value.role),
         adminPassword: value.adminPassword
     };
 }
-async function from_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     name: string;
     description: string;
@@ -1350,10 +1407,10 @@ async function from_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promi
         description: value.description,
         amenities: value.amenities,
         address: value.address,
-        photos: await from_candid_vec_n31(_uploadFile, _downloadFile, value.photos)
+        photos: await from_candid_vec_n33(_uploadFile, _downloadFile, value.photos)
     };
 }
-async function from_candid_record_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     photoUrls: Array<string>;
     ownerMessage: string;
@@ -1400,24 +1457,24 @@ async function from_candid_record_n35(_uploadFile: (file: ExternalBlob) => Promi
         id: value.id,
         photoUrls: value.photoUrls,
         ownerMessage: value.ownerMessage,
-        ownerType: from_candid_variant_n36(_uploadFile, _downloadFile, value.ownerType),
+        ownerType: from_candid_variant_n38(_uploadFile, _downloadFile, value.ownerType),
         partnerName: value.partnerName,
         hotelId: value.hotelId,
         ratings: value.ratings,
         description: value.description,
         amenities: value.amenities,
-        googleMapsLink: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.googleMapsLink)),
+        googleMapsLink: record_opt_to_undefined(from_candid_opt_n39(_uploadFile, _downloadFile, value.googleMapsLink)),
         videoUrls: value.videoUrls,
-        partnerId: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.partnerId)),
+        partnerId: record_opt_to_undefined(from_candid_opt_n39(_uploadFile, _downloadFile, value.partnerId)),
         availability: value.availability,
         price: value.price,
-        roomType: from_candid_RoomType_n38(_uploadFile, _downloadFile, value.roomType),
+        roomType: from_candid_RoomType_n40(_uploadFile, _downloadFile, value.roomType),
         distanceFromTemple: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.distanceFromTemple)),
-        photos: await from_candid_vec_n31(_uploadFile, _downloadFile, value.photos),
+        photos: await from_candid_vec_n33(_uploadFile, _downloadFile, value.photos),
         partnerPhoneNumber: value.partnerPhoneNumber
     };
 }
-function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     customerName: string;
     status: _BookingStatus;
@@ -1445,7 +1502,7 @@ function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promise<Uin
     return {
         id: value.id,
         customerName: value.customerName,
-        status: from_candid_BookingStatus_n43(_uploadFile, _downloadFile, value.status),
+        status: from_candid_BookingStatus_n45(_uploadFile, _downloadFile, value.status),
         userId: value.userId,
         hotelId: value.hotelId,
         checkInDate: value.checkInDate,
@@ -1468,7 +1525,7 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     notificationType: {
         profileUpdate: null;
@@ -1493,13 +1550,13 @@ function from_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uin
 } {
     return {
         id: value.id,
-        notificationType: from_candid_variant_n51(_uploadFile, _downloadFile, value.notificationType),
+        notificationType: from_candid_variant_n53(_uploadFile, _downloadFile, value.notificationType),
         unread: value.unread,
         message: value.message,
         timestamp: value.timestamp
     };
 }
-function from_candid_record_n55(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n57(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     userPrincipal: [] | [string];
     response: string;
 }): {
@@ -1507,11 +1564,35 @@ function from_candid_record_n55(_uploadFile: (file: ExternalBlob) => Promise<Uin
     response: string;
 } {
     return {
-        userPrincipal: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.userPrincipal)),
+        userPrincipal: record_opt_to_undefined(from_candid_opt_n39(_uploadFile, _downloadFile, value.userPrincipal)),
         response: value.response
     };
 }
-function from_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n60(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: string;
+    date: string;
+    name: string;
+    description: string;
+    image: _ExternalBlob;
+    price: bigint;
+}): Promise<{
+    id: string;
+    date: string;
+    name: string;
+    description: string;
+    image: ExternalBlob;
+    price: bigint;
+}> {
+    return {
+        id: value.id,
+        date: value.date,
+        name: value.name,
+        description: value.description,
+        image: await from_candid_ExternalBlob_n34(_uploadFile, _downloadFile, value.image),
+        price: value.price
+    };
+}
+function from_candid_variant_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -1520,14 +1601,14 @@ function from_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     partner: null;
 }): Variant_admin_partner {
     return "admin" in value ? Variant_admin_partner.admin : "partner" in value ? Variant_admin_partner.partner : value;
 }
-function from_candid_variant_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     double: null;
 } | {
     suite: null;
@@ -1536,7 +1617,7 @@ function from_candid_variant_n39(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): RoomType {
     return "double" in value ? RoomType.double : "suite" in value ? RoomType.suite : "single" in value ? RoomType.single : value;
 }
-function from_candid_variant_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     cancelled: null;
 } | {
     confirmed: null;
@@ -1545,7 +1626,7 @@ function from_candid_variant_n44(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): BookingStatus {
     return "cancelled" in value ? BookingStatus.cancelled : "confirmed" in value ? BookingStatus.confirmed : "pendingConfirmation" in value ? BookingStatus.pendingConfirmation : value;
 }
-function from_candid_variant_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     profileUpdate: null;
 } | {
     booking: null;
@@ -1558,7 +1639,7 @@ function from_candid_variant_n51(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): Variant_profileUpdate_booking_newLogin_partner_payment {
     return "profileUpdate" in value ? Variant_profileUpdate_booking_newLogin_partner_payment.profileUpdate : "booking" in value ? Variant_profileUpdate_booking_newLogin_partner_payment.booking : "newLogin" in value ? Variant_profileUpdate_booking_newLogin_partner_payment.newLogin : "partner" in value ? Variant_profileUpdate_booking_newLogin_partner_payment.partner : "payment" in value ? Variant_profileUpdate_booking_newLogin_partner_payment.payment : value;
 }
-function from_candid_variant_n54(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n56(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     completed: {
         userPrincipal: [] | [string];
         response: string;
@@ -1581,32 +1662,35 @@ function from_candid_variant_n54(_uploadFile: (file: ExternalBlob) => Promise<Ui
 } {
     return "completed" in value ? {
         __kind__: "completed",
-        completed: from_candid_record_n55(_uploadFile, _downloadFile, value.completed)
+        completed: from_candid_record_n57(_uploadFile, _downloadFile, value.completed)
     } : "failed" in value ? {
         __kind__: "failed",
         failed: value.failed
     } : value;
 }
-async function from_candid_vec_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Hotel>): Promise<Array<Hotel>> {
-    return await Promise.all(value.map(async (x)=>await from_candid_Hotel_n29(_uploadFile, _downloadFile, x)));
+async function from_candid_vec_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Hotel>): Promise<Array<Hotel>> {
+    return await Promise.all(value.map(async (x)=>await from_candid_Hotel_n31(_uploadFile, _downloadFile, x)));
 }
-async function from_candid_vec_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ExternalBlob>): Promise<Array<ExternalBlob>> {
-    return await Promise.all(value.map(async (x)=>await from_candid_ExternalBlob_n32(_uploadFile, _downloadFile, x)));
+async function from_candid_vec_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ExternalBlob>): Promise<Array<ExternalBlob>> {
+    return await Promise.all(value.map(async (x)=>await from_candid_ExternalBlob_n34(_uploadFile, _downloadFile, x)));
 }
-async function from_candid_vec_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_HomeStay>): Promise<Array<HomeStay>> {
-    return await Promise.all(value.map(async (x)=>await from_candid_HomeStay_n34(_uploadFile, _downloadFile, x)));
+async function from_candid_vec_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_HomeStay>): Promise<Array<HomeStay>> {
+    return await Promise.all(value.map(async (x)=>await from_candid_HomeStay_n36(_uploadFile, _downloadFile, x)));
 }
-function from_candid_vec_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Booking>): Array<Booking> {
-    return value.map((x)=>from_candid_Booking_n41(_uploadFile, _downloadFile, x));
+function from_candid_vec_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Booking>): Array<Booking> {
+    return value.map((x)=>from_candid_Booking_n43(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Notification>): Array<Notification> {
-    return value.map((x)=>from_candid_Notification_n49(_uploadFile, _downloadFile, x));
+function from_candid_vec_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Notification>): Array<Notification> {
+    return value.map((x)=>from_candid_Notification_n51(_uploadFile, _downloadFile, x));
 }
-function to_candid_BookingStatus_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BookingStatus): _BookingStatus {
-    return to_candid_variant_n23(_uploadFile, _downloadFile, value);
+async function from_candid_vec_n58(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_TempleSpecial>): Promise<Array<TempleSpecial>> {
+    return await Promise.all(value.map(async (x)=>await from_candid_TempleSpecial_n59(_uploadFile, _downloadFile, x)));
 }
-function to_candid_Booking_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Booking): _Booking {
-    return to_candid_record_n21(_uploadFile, _downloadFile, value);
+function to_candid_BookingStatus_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BookingStatus): _BookingStatus {
+    return to_candid_variant_n25(_uploadFile, _downloadFile, value);
+}
+function to_candid_Booking_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Booking): _Booking {
+    return to_candid_record_n23(_uploadFile, _downloadFile, value);
 }
 async function to_candid_ExternalBlob_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
@@ -1620,8 +1704,11 @@ async function to_candid_Hotel_n16(_uploadFile: (file: ExternalBlob) => Promise<
 function to_candid_RoomType_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: RoomType): _RoomType {
     return to_candid_variant_n12(_uploadFile, _downloadFile, value);
 }
-function to_candid_UserRole_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
-    return to_candid_variant_n19(_uploadFile, _downloadFile, value);
+async function to_candid_TempleSpecial_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: TempleSpecial): Promise<_TempleSpecial> {
+    return await to_candid_record_n19(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserRole_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
+    return to_candid_variant_n21(_uploadFile, _downloadFile, value);
 }
 function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation): __CaffeineStorageRefillInformation {
     return to_candid_record_n3(_uploadFile, _downloadFile, value);
@@ -1656,7 +1743,31 @@ async function to_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promise
         photos: await to_candid_vec_n13(_uploadFile, _downloadFile, value.photos)
     };
 }
-function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function to_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: string;
+    date: string;
+    name: string;
+    description: string;
+    image: ExternalBlob;
+    price: bigint;
+}): Promise<{
+    id: string;
+    date: string;
+    name: string;
+    description: string;
+    image: _ExternalBlob;
+    price: bigint;
+}> {
+    return {
+        id: value.id,
+        date: value.date,
+        name: value.name,
+        description: value.description,
+        image: await to_candid_ExternalBlob_n14(_uploadFile, _downloadFile, value.image),
+        price: value.price
+    };
+}
+function to_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     customerName: string;
     status: BookingStatus;
@@ -1684,7 +1795,7 @@ function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     return {
         id: value.id,
         customerName: value.customerName,
-        status: to_candid_BookingStatus_n22(_uploadFile, _downloadFile, value.status),
+        status: to_candid_BookingStatus_n24(_uploadFile, _downloadFile, value.status),
         userId: value.userId,
         hotelId: value.hotelId,
         checkInDate: value.checkInDate,
@@ -1794,7 +1905,7 @@ function to_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint
         single: null
     } : value;
 }
-function to_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
+function to_candid_variant_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;
 } | {
     user: null;
@@ -1809,7 +1920,7 @@ function to_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint
         guest: null
     } : value;
 }
-function to_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BookingStatus): {
+function to_candid_variant_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BookingStatus): {
     cancelled: null;
 } | {
     confirmed: null;

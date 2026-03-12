@@ -1,17 +1,24 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DollarSign, TrendingUp, Calendar, Download, CreditCard, Clock } from 'lucide-react';
-import { getBookings, type Booking } from '../../lib/dataStorage';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Calendar,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Download,
+  TrendingUp,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { type Booking, getBookings } from "../../lib/dataStorage";
 
 interface PayoutRecord {
   id: string;
   amount: number;
   date: string;
-  status: 'completed' | 'pending' | 'processing';
+  status: "completed" | "pending" | "processing";
   bookingIds: string[];
 }
 
@@ -26,6 +33,7 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
   const [pendingBalance, setPendingBalance] = useState(0);
   const [completedPayouts, setCompletedPayouts] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stable
   useEffect(() => {
     loadPayoutData();
   }, [homeStayId]);
@@ -33,7 +41,7 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
   const loadPayoutData = () => {
     const allBookings = getBookings();
     const homeStayBookings = allBookings.filter(
-      b => b.homeStayId === homeStayId && b.status === 'confirmed'
+      (b) => b.homeStayId === homeStayId && b.status === "confirmed",
     );
     setBookings(homeStayBookings);
 
@@ -42,13 +50,15 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
     setTotalEarnings(total);
 
     // Load payout records from localStorage
-    const storedPayouts = localStorage.getItem(`mantralayam_payouts_${homeStayId}`);
+    const storedPayouts = localStorage.getItem(
+      `mantralayam_payouts_${homeStayId}`,
+    );
     if (storedPayouts) {
       const payoutRecords: PayoutRecord[] = JSON.parse(storedPayouts);
       setPayouts(payoutRecords);
-      
+
       const completed = payoutRecords
-        .filter(p => p.status === 'completed')
+        .filter((p) => p.status === "completed")
         .reduce((sum, p) => sum + p.amount, 0);
       setCompletedPayouts(completed);
       setPendingBalance(total - completed);
@@ -64,34 +74,41 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
       id: `payout-${Date.now()}`,
       amount: pendingBalance,
       date: new Date().toISOString(),
-      status: 'pending',
-      bookingIds: bookings.map(b => b.id),
+      status: "pending",
+      bookingIds: bookings.map((b) => b.id),
     };
 
     const updatedPayouts = [...payouts, newPayout];
     setPayouts(updatedPayouts);
-    localStorage.setItem(`mantralayam_payouts_${homeStayId}`, JSON.stringify(updatedPayouts));
+    localStorage.setItem(
+      `mantralayam_payouts_${homeStayId}`,
+      JSON.stringify(updatedPayouts),
+    );
   };
 
   const getMonthlyEarnings = () => {
     const monthlyData: Record<string, number> = {};
-    bookings.forEach(booking => {
-      const month = new Date(booking.bookingDate).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
+    for (const booking of bookings) {
+      const month = new Date(booking.bookingDate).toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
       });
       monthlyData[month] = (monthlyData[month] || 0) + booking.totalPrice;
-    });
+    }
     return Object.entries(monthlyData).slice(-6);
   };
 
-  const getStatusBadge = (status: PayoutRecord['status']) => {
+  const getStatusBadge = (status: PayoutRecord["status"]) => {
     switch (status) {
-      case 'completed':
-        return <Badge className="gradient-saffron-gold text-white border-0">Completed</Badge>;
-      case 'processing':
+      case "completed":
+        return (
+          <Badge className="gradient-saffron-gold text-white border-0">
+            Completed
+          </Badge>
+        );
+      case "processing":
         return <Badge variant="secondary">Processing</Badge>;
-      case 'pending':
+      case "pending":
         return <Badge variant="outline">Pending</Badge>;
     }
   };
@@ -105,7 +122,9 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Earnings</p>
-                <p className="text-3xl font-bold text-primary">₹{totalEarnings.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-primary">
+                  ₹{totalEarnings.toLocaleString()}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-xl gradient-saffron-gold flex items-center justify-center">
                 <DollarSign className="h-6 w-6 text-white" />
@@ -119,7 +138,9 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pending Balance</p>
-                <p className="text-3xl font-bold text-amber-600">₹{pendingBalance.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-amber-600">
+                  ₹{pendingBalance.toLocaleString()}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center">
                 <Clock className="h-6 w-6 text-white" />
@@ -132,8 +153,12 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Completed Payouts</p>
-                <p className="text-3xl font-bold text-green-600">₹{completedPayouts.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">
+                  Completed Payouts
+                </p>
+                <p className="text-3xl font-bold text-green-600">
+                  ₹{completedPayouts.toLocaleString()}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center">
                 <CreditCard className="h-6 w-6 text-white" />
@@ -160,20 +185,35 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
               <ScrollArea className="h-[400px]">
                 <div className="space-y-3">
                   {bookings.map((booking) => (
-                    <div key={booking.id} className="p-4 rounded-lg border glass-card">
+                    <div
+                      key={booking.id}
+                      className="p-4 rounded-lg border glass-card"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <p className="font-semibold">{booking.customerName}</p>
+                          <p className="font-semibold">
+                            {booking.customerName}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(booking.bookingDate).toLocaleDateString('en-IN')}
+                            {new Date(booking.bookingDate).toLocaleDateString(
+                              "en-IN",
+                            )}
                           </p>
                         </div>
-                        <p className="text-lg font-bold text-primary">₹{booking.totalPrice}</p>
+                        <p className="text-lg font-bold text-primary">
+                          ₹{booking.totalPrice}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
                         <span>
-                          {new Date(booking.checkInDate).toLocaleDateString('en-IN')} - {new Date(booking.checkOutDate).toLocaleDateString('en-IN')}
+                          {new Date(booking.checkInDate).toLocaleDateString(
+                            "en-IN",
+                          )}{" "}
+                          -{" "}
+                          {new Date(booking.checkOutDate).toLocaleDateString(
+                            "en-IN",
+                          )}
                         </span>
                       </div>
                     </div>
@@ -206,14 +246,22 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
                     {payouts.map((payout) => (
-                      <div key={payout.id} className="p-4 rounded-lg border glass-card">
+                      <div
+                        key={payout.id}
+                        className="p-4 rounded-lg border glass-card"
+                      >
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <p className="font-semibold">₹{payout.amount.toLocaleString()}</p>
+                            <p className="font-semibold">
+                              ₹{payout.amount.toLocaleString()}
+                            </p>
                             <p className="text-sm text-muted-foreground">
-                              {new Date(payout.date).toLocaleDateString('en-IN', {
-                                dateStyle: 'medium',
-                              })}
+                              {new Date(payout.date).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  dateStyle: "medium",
+                                },
+                              )}
                             </p>
                           </div>
                           {getStatusBadge(payout.status)}
@@ -244,7 +292,9 @@ export default function PayoutTracker({ homeStayId }: PayoutTrackerProps) {
                   <div key={month} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{month}</span>
-                      <span className="font-bold text-primary">₹{amount.toLocaleString()}</span>
+                      <span className="font-bold text-primary">
+                        ₹{amount.toLocaleString()}
+                      </span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div

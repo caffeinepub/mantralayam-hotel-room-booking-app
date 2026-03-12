@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
-import { Menu, X, Hotel, LogOut, Moon, Sun, Languages } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { getCustomerSession, clearCustomerSession } from '../lib/dataStorage';
-import { useTranslation } from './LanguageProvider';
-import { LANGUAGES, Language } from '../lib/i18n';
+} from "@/components/ui/dropdown-menu";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Hotel, Languages, LogOut, Menu, Moon, Sun, X } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { clearCustomerSession, getCustomerSession } from "../lib/dataStorage";
+import { LANGUAGES, type Language } from "../lib/i18n";
+import { useTranslation } from "./LanguageProvider";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -21,25 +21,30 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPartnerAuth, setIsPartnerAuth] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
-  const [customerSession, setCustomerSession] = useState<{ name: string; phone: string } | null>(null);
+  const [customerSession, setCustomerSession] = useState<{
+    name: string;
+    phone: string;
+  } | null>(null);
 
   useEffect(() => {
     const checkAuth = () => {
-      setIsPartnerAuth(localStorage.getItem('partnerAuthenticated') === 'true');
-      setIsAdminAuth(localStorage.getItem('adminAuthenticated') === 'true');
+      setIsPartnerAuth(localStorage.getItem("partnerAuthenticated") === "true");
+      setIsAdminAuth(localStorage.getItem("adminAuthenticated") === "true");
       const session = getCustomerSession();
-      setCustomerSession(session ? { name: session.name, phone: session.phone } : null);
+      setCustomerSession(
+        session ? { name: session.name, phone: session.phone } : null,
+      );
     };
 
     checkAuth();
-    window.addEventListener('partnerAuthChanged', checkAuth);
-    window.addEventListener('storage', checkAuth);
+    window.addEventListener("partnerAuthChanged", checkAuth);
+    window.addEventListener("storage", checkAuth);
 
     const interval = setInterval(checkAuth, 1000);
 
     return () => {
-      window.removeEventListener('partnerAuthChanged', checkAuth);
-      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener("partnerAuthChanged", checkAuth);
+      window.removeEventListener("storage", checkAuth);
       clearInterval(interval);
     };
   }, []);
@@ -47,28 +52,28 @@ export default function Header() {
   const handleCustomerLogout = () => {
     clearCustomerSession();
     setCustomerSession(null);
-    toast.success(t('nav.logout'));
-    navigate({ to: '/' });
+    toast.success(t("nav.logout"));
+    navigate({ to: "/" });
   };
 
   const handlePartnerLogout = () => {
-    localStorage.removeItem('partnerAuthenticated');
-    localStorage.removeItem('partnerRoomId');
-    localStorage.removeItem('partnerPasscode');
-    window.dispatchEvent(new Event('partnerAuthChanged'));
-    toast.success(t('nav.logout'));
-    navigate({ to: '/partner-login' });
+    localStorage.removeItem("partnerAuthenticated");
+    localStorage.removeItem("partnerRoomId");
+    localStorage.removeItem("partnerPasscode");
+    window.dispatchEvent(new Event("partnerAuthChanged"));
+    toast.success(t("nav.logout"));
+    navigate({ to: "/partner-login" });
   };
 
   const handleAdminLogout = () => {
-    localStorage.removeItem('adminAuthenticated');
+    localStorage.removeItem("adminAuthenticated");
     setIsAdminAuth(false);
-    toast.success(t('nav.logout'));
-    navigate({ to: '/admin' });
+    toast.success(t("nav.logout"));
+    navigate({ to: "/admin" });
   };
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -89,33 +94,33 @@ export default function Header() {
             to="/"
             className="text-sm font-medium hover:text-primary transition-colors"
           >
-            {t('nav.home')}
+            {t("nav.home")}
           </Link>
           <Link
             to="/browse-rooms"
             className="text-sm font-medium hover:text-primary transition-colors"
           >
-            {t('nav.browseRooms')}
+            {t("nav.browseRooms")}
           </Link>
           {customerSession && (
             <Link
               to="/my-bookings"
               className="text-sm font-medium hover:text-primary transition-colors"
             >
-              {t('nav.myBookings')}
+              {t("nav.myBookings")}
             </Link>
           )}
           <Link
             to="/admin"
             className="text-sm font-medium hover:text-primary transition-colors"
           >
-            {t('nav.admin')}
+            {t("nav.admin")}
           </Link>
           <Link
             to="/partner-login"
             className="text-sm font-medium hover:text-primary transition-colors"
           >
-            {t('nav.partner')}
+            {t("nav.partner")}
           </Link>
         </nav>
 
@@ -123,11 +128,7 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-              >
+              <Button variant="ghost" size="icon" className="rounded-full">
                 <Languages className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -136,7 +137,7 @@ export default function Header() {
                 <DropdownMenuItem
                   key={code}
                   onClick={() => setLanguage(code as Language)}
-                  className={language === code ? 'bg-primary/10' : ''}
+                  className={language === code ? "bg-primary/10" : ""}
                 >
                   {name}
                 </DropdownMenuItem>
@@ -149,7 +150,7 @@ export default function Header() {
             size="icon"
             className="rounded-full"
           >
-            {theme === 'dark' ? (
+            {theme === "dark" ? (
               <Sun className="h-5 w-5" />
             ) : (
               <Moon className="h-5 w-5" />
@@ -163,7 +164,7 @@ export default function Header() {
               className="gap-2"
             >
               <LogOut className="h-4 w-4" />
-              {t('nav.logout')}
+              {t("nav.logout")}
             </Button>
           )}
           {isPartnerAuth && (
@@ -174,7 +175,7 @@ export default function Header() {
               className="gap-2"
             >
               <LogOut className="h-4 w-4" />
-              {t('nav.logout')}
+              {t("nav.logout")}
             </Button>
           )}
           {customerSession ? (
@@ -189,7 +190,7 @@ export default function Header() {
                 className="gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                {t('nav.logout')}
+                {t("nav.logout")}
               </Button>
             </div>
           ) : null}
@@ -197,10 +198,15 @@ export default function Header() {
 
         {/* Mobile Menu Button */}
         <button
+          type="button"
           className="md:hidden p-2"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
-          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {isMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
         </button>
       </div>
 
@@ -213,14 +219,14 @@ export default function Header() {
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t('nav.home')}
+              {t("nav.home")}
             </Link>
             <Link
               to="/browse-rooms"
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t('nav.browseRooms')}
+              {t("nav.browseRooms")}
             </Link>
             {customerSession && (
               <Link
@@ -228,7 +234,7 @@ export default function Header() {
                 className="text-sm font-medium hover:text-primary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.myBookings')}
+                {t("nav.myBookings")}
               </Link>
             )}
             <Link
@@ -236,17 +242,19 @@ export default function Header() {
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t('nav.admin')}
+              {t("nav.admin")}
             </Link>
             <Link
               to="/partner-login"
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              {t('nav.partner')}
+              {t("nav.partner")}
             </Link>
             <div className="pt-4 border-t space-y-2">
-              <div className="text-sm font-medium mb-2">Language / భాష / ಭಾಷೆ</div>
+              <div className="text-sm font-medium mb-2">
+                Language / భాష / ಭಾಷೆ
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(LANGUAGES).map(([code, name]) => (
                   <Button
@@ -255,7 +263,7 @@ export default function Header() {
                       setLanguage(code as Language);
                       setIsMenuOpen(false);
                     }}
-                    variant={language === code ? 'default' : 'outline'}
+                    variant={language === code ? "default" : "outline"}
                     size="sm"
                     className="w-full"
                   >
@@ -272,7 +280,7 @@ export default function Header() {
                 size="sm"
                 className="w-full gap-2"
               >
-                {theme === 'dark' ? (
+                {theme === "dark" ? (
                   <>
                     <Sun className="h-4 w-4" />
                     Light Mode
@@ -295,7 +303,7 @@ export default function Header() {
                   className="w-full gap-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  {t('nav.logout')}
+                  {t("nav.logout")}
                 </Button>
               )}
               {isPartnerAuth && (
@@ -309,7 +317,7 @@ export default function Header() {
                   className="w-full gap-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  {t('nav.logout')}
+                  {t("nav.logout")}
                 </Button>
               )}
               {customerSession && (
@@ -327,7 +335,7 @@ export default function Header() {
                     className="w-full gap-2"
                   >
                     <LogOut className="h-4 w-4" />
-                    {t('nav.logout')}
+                    {t("nav.logout")}
                   </Button>
                 </>
               )}

@@ -1,10 +1,22 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, User, Calendar, CheckCircle, Clock } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getSMSNotifications, getRecentSMSNotifications, getSMSStatistics, SMSNotification } from '../../lib/smsNotifications';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  MessageSquare,
+  Phone,
+  User,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  type SMSNotification,
+  getRecentSMSNotifications,
+  getSMSNotifications,
+  getSMSStatistics,
+} from "../../lib/smsNotifications";
 
 export default function SMSNotificationPanel() {
   const [notifications, setNotifications] = useState<SMSNotification[]>([]);
@@ -22,6 +34,7 @@ export default function SMSNotificationPanel() {
     setStatistics(getSMSStatistics());
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadNotifications is stable
   useEffect(() => {
     loadNotifications();
 
@@ -30,13 +43,13 @@ export default function SMSNotificationPanel() {
       loadNotifications();
     };
 
-    window.addEventListener('smsNotificationSent', handleSMSNotification);
+    window.addEventListener("smsNotificationSent", handleSMSNotification);
 
     // Poll for updates every 10 seconds
     const interval = setInterval(loadNotifications, 10000);
 
     return () => {
-      window.removeEventListener('smsNotificationSent', handleSMSNotification);
+      window.removeEventListener("smsNotificationSent", handleSMSNotification);
       clearInterval(interval);
     };
   }, []);
@@ -48,19 +61,28 @@ export default function SMSNotificationPanel() {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return date.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    return date.toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
   };
 
-  const getStatusBadge = (status: SMSNotification['status']) => {
+  const getStatusBadge = (status: SMSNotification["status"]) => {
     switch (status) {
-      case 'sent':
-        return <Badge variant="default" className="bg-green-500">Sent</Badge>;
-      case 'pending':
+      case "sent":
+        return (
+          <Badge variant="default" className="bg-green-500">
+            Sent
+          </Badge>
+        );
+      case "pending":
         return <Badge variant="secondary">Pending</Badge>;
-      case 'failed':
+      case "failed":
         return <Badge variant="destructive">Failed</Badge>;
     }
   };
@@ -68,9 +90,12 @@ export default function SMSNotificationPanel() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-semibold text-slate-100 mb-2">SMS Notifications</h3>
+        <h3 className="text-xl font-semibold text-slate-100 mb-2">
+          SMS Notifications
+        </h3>
         <p className="text-sm text-slate-400">
-          Automatic SMS notifications sent to room owners when bookings are confirmed
+          Automatic SMS notifications sent to room owners when bookings are
+          confirmed
         </p>
       </div>
 
@@ -79,7 +104,9 @@ export default function SMSNotificationPanel() {
         <Card className="bg-slate-900 border-slate-700">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-slate-100">{statistics.total}</p>
+              <p className="text-2xl font-bold text-slate-100">
+                {statistics.total}
+              </p>
               <p className="text-xs text-slate-400 mt-1">Total SMS</p>
             </div>
           </CardContent>
@@ -87,7 +114,9 @@ export default function SMSNotificationPanel() {
         <Card className="bg-slate-900 border-slate-700">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-400">{statistics.sent}</p>
+              <p className="text-2xl font-bold text-green-400">
+                {statistics.sent}
+              </p>
               <p className="text-xs text-slate-400 mt-1">Sent</p>
             </div>
           </CardContent>
@@ -95,7 +124,9 @@ export default function SMSNotificationPanel() {
         <Card className="bg-slate-900 border-slate-700">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-400">{statistics.pending}</p>
+              <p className="text-2xl font-bold text-yellow-400">
+                {statistics.pending}
+              </p>
               <p className="text-xs text-slate-400 mt-1">Pending</p>
             </div>
           </CardContent>
@@ -103,7 +134,9 @@ export default function SMSNotificationPanel() {
         <Card className="bg-slate-900 border-slate-700">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-red-400">{statistics.failed}</p>
+              <p className="text-2xl font-bold text-red-400">
+                {statistics.failed}
+              </p>
               <p className="text-xs text-slate-400 mt-1">Failed</p>
             </div>
           </CardContent>
@@ -111,7 +144,9 @@ export default function SMSNotificationPanel() {
         <Card className="bg-slate-900 border-slate-700">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-400">{statistics.last24Hours}</p>
+              <p className="text-2xl font-bold text-blue-400">
+                {statistics.last24Hours}
+              </p>
               <p className="text-xs text-slate-400 mt-1">Last 24h</p>
             </div>
           </CardContent>
@@ -138,7 +173,10 @@ export default function SMSNotificationPanel() {
             <ScrollArea className="h-[500px] pr-4">
               <div className="space-y-4">
                 {notifications.map((notification) => (
-                  <Card key={notification.id} className="bg-slate-800 border-slate-700">
+                  <Card
+                    key={notification.id}
+                    className="bg-slate-800 border-slate-700"
+                  >
                     <CardContent className="p-4">
                       <div className="space-y-3">
                         {/* Header */}
@@ -148,8 +186,12 @@ export default function SMSNotificationPanel() {
                               <MessageSquare className="h-4 w-4 text-blue-400" />
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-100">{notification.roomName}</p>
-                              <p className="text-xs text-slate-400">Booking #{notification.bookingId.slice(-8)}</p>
+                              <p className="font-semibold text-slate-100">
+                                {notification.roomName}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                Booking #{notification.bookingId.slice(-8)}
+                              </p>
                             </div>
                           </div>
                           {getStatusBadge(notification.status)}
@@ -175,7 +217,9 @@ export default function SMSNotificationPanel() {
 
                         {/* Message Preview */}
                         <div className="bg-slate-900 rounded-lg p-3">
-                          <p className="text-xs text-slate-400 mb-1">Message:</p>
+                          <p className="text-xs text-slate-400 mb-1">
+                            Message:
+                          </p>
                           <p className="text-sm text-slate-200 whitespace-pre-line line-clamp-3">
                             {notification.message}
                           </p>
@@ -200,9 +244,10 @@ export default function SMSNotificationPanel() {
       <Alert className="bg-slate-900 border-slate-700">
         <CheckCircle className="h-4 w-4 text-green-400" />
         <AlertDescription className="text-slate-300">
-          <strong>Automatic SMS System:</strong> When a booking is confirmed after successful payment, 
-          an SMS notification is automatically sent to the room owner with booking details including 
-          customer name, check-in/check-out times, and booking reference number.
+          <strong>Automatic SMS System:</strong> When a booking is confirmed
+          after successful payment, an SMS notification is automatically sent to
+          the room owner with booking details including customer name,
+          check-in/check-out times, and booking reference number.
         </AlertDescription>
       </Alert>
     </div>

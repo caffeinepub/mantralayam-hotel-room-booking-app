@@ -1,128 +1,165 @@
-import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { Key, ArrowRight, Phone } from 'lucide-react';
-import { getHomeStays, updateAnalytics } from '../lib/dataStorage';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { Eye, EyeOff, Home, LogIn } from "lucide-react";
+import { useState } from "react";
+import { useActor } from "../hooks/useActor";
 
 export default function PartnerLoginPage() {
   const navigate = useNavigate();
-  const [passcode, setPasscode] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
 
-  const handleLogin = async () => {
-    const trimmedPasscode = passcode.trim();
-    
-    if (!trimmedPasscode) {
-      toast.error('Please enter a passcode');
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!actor) {
+      setError("System not ready. Please try again.");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Please enter your password.");
       return;
     }
 
-    setIsProcessing(true);
+    setIsLoading(true);
+    setError("");
 
     try {
-      // Always read fresh homestay data at submit time to catch any admin updates
-      const homeStays = getHomeStays();
-      
-      // Normalize passcode comparison - trim and compare as strings
-      const homeStay = homeStays.find(h => {
-        const homeStayPasscode = h.passcode?.trim() || '';
-        return homeStayPasscode === trimmedPasscode && homeStayPasscode !== '';
-      });
+      // Authenticate with backend - this sets up the partner session on the canister
+      const success = await actor.authenticatePartnerWithPassword(
+        password.trim(),
+      );
 
-      if (homeStay) {
-        // Store partner auth using consistent identifiers
-        localStorage.setItem('partnerAuthenticated', 'true');
-        localStorage.setItem('partnerRoomId', homeStay.id);
-        localStorage.setItem('partnerId', homeStay.partnerId || homeStay.id);
-        localStorage.setItem('partnerPasscode', trimmedPasscode);
-        
-        // Dispatch auth change event
-        window.dispatchEvent(new Event('partnerAuthChanged'));
-        
-        // Track analytics
-        updateAnalytics('partnerEdits');
-        
-        toast.success('Login successful!');
-        navigate({ to: '/partner-dashboard' });
+      if (success) {
+        // Get the authenticated partner ID from the backend
+        const partnerId = await actor.getAuthenticatedPartnerId();
+
+        if (!partnerId) {
+          setError(
+            "Authentication succeeded but partner ID could not be retrieved. Please try again.",
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        // Store minimal session info in localStorage
+        localStorage.setItem(
+          "partnerSession",
+          JSON.stringify({
+            partnerId,
+            loginTime: Date.now(),
+          }),
+        );
+
+        // Invalidate all partner-related queries so fresh data is fetched
+        await queryClient.invalidateQueries({ queryKey: ["partnerRooms"] });
+        await queryClient.invalidateQueries({ queryKey: ["partnerProfile"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["authenticatedPartnerId"],
+        });
+
+        navigate({ to: "/partner-dashboard" });
       } else {
-        toast.error('Invalid passcode. Please check and try again.');
+        setError(
+          "Invalid password. Please check your credentials and try again.",
+        );
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      if (msg.includes("Invalid password") || msg.includes("not found")) {
+        setError(
+          "Invalid password. Please check your credentials and try again.",
+        );
+      } else {
+        setError("Login failed. Please try again.");
+      }
     } finally {
-      setIsProcessing(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container py-16 max-w-md animate-fade-in">
-      <Card className="glass-card shadow-saffron-lg">
-        <CardHeader>
-          <div className="mx-auto w-16 h-16 rounded-full gradient-saffron-gold flex items-center justify-center mb-4 shadow-saffron">
-            <Key className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Logo / Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
+            <Home className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl text-center">Partner Login</CardTitle>
-          <p className="text-center text-muted-foreground">
-            Enter your passcode to manage your homestay
+          <h1 className="text-2xl font-bold text-foreground">Partner Login</h1>
+          <p className="text-muted-foreground mt-1">
+            Enter your password to access your dashboard
           </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="passcode">Passcode</Label>
-            <Input
-              id="passcode"
-              type="password"
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              placeholder="Enter your passcode"
-              className="glass-card"
-              autoFocus
-            />
-          </div>
-          <Button
-            onClick={handleLogin}
-            disabled={isProcessing}
-            className="w-full gradient-saffron-gold text-white border-0 hover:opacity-90 gap-2"
-            size="lg"
-          >
-            {isProcessing ? 'Logging in...' : 'Login'}
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-          
-          {/* Admin Contact Section */}
-          <div className="pt-4 border-t space-y-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span className="font-medium">Need help? Contact Admin:</span>
+        </div>
+
+        {/* Login Form */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your partner password"
+                  className="pr-10"
+                  disabled={isLoading}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <a
-                href="tel:6281019435"
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-sm font-medium"
-              >
-                <Phone className="h-4 w-4 text-primary" />
-                <span>6281019435</span>
-              </a>
-              <a
-                href="tel:9985837477"
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-sm font-medium"
-              >
-                <Phone className="h-4 w-4 text-primary" />
-                <span>9985837477</span>
-              </a>
-            </div>
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              Tap to call for passcode assistance
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg px-3 py-2">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={isLoading || !password.trim()}
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Logging in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </span>
+              )}
+            </Button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          Contact the admin if you've forgotten your password.
+        </p>
+      </div>
     </div>
   );
 }

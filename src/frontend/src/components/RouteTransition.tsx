@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from '@tanstack/react-router';
+import { useLocation } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 interface RouteTransitionProps {
   children: React.ReactNode;
@@ -8,18 +8,20 @@ interface RouteTransitionProps {
 export default function RouteTransition({ children }: RouteTransitionProps) {
   const location = useLocation();
   const [displayLocation, setDisplayLocation] = useState(location);
-  const [transitionStage, setTransitionStage] = useState<'fade-in' | 'fade-out'>('fade-in');
+  const [transitionStage, setTransitionStage] = useState<
+    "fade-in" | "fade-out"
+  >("fade-in");
 
   useEffect(() => {
     if (location !== displayLocation) {
-      setTransitionStage('fade-out');
+      setTransitionStage("fade-out");
     }
   }, [location, displayLocation]);
 
   const handleAnimationEnd = () => {
-    if (transitionStage === 'fade-out') {
+    if (transitionStage === "fade-out") {
       setDisplayLocation(location);
-      setTransitionStage('fade-in');
+      setTransitionStage("fade-in");
     }
   };
 

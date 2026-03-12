@@ -1,5 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, getStoredLanguage, setStoredLanguage, translate } from '../lib/i18n';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import {
+  type Language,
+  getStoredLanguage,
+  setStoredLanguage,
+  translate,
+} from "../lib/i18n";
 
 interface LanguageContextType {
   language: Language;
@@ -7,7 +18,9 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getStoredLanguage());
@@ -17,8 +30,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       setLanguageState(getStoredLanguage());
     };
 
-    window.addEventListener('languageChanged', handleLanguageChange);
-    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+    window.addEventListener("languageChanged", handleLanguageChange);
+    return () =>
+      window.removeEventListener("languageChanged", handleLanguageChange);
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -40,7 +54,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 export function useTranslation() {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useTranslation must be used within LanguageProvider');
+    throw new Error("useTranslation must be used within LanguageProvider");
   }
   return context;
 }

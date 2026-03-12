@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,22 +7,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
-import { createIssue } from '../lib/issueStorage';
-import { addPermanentNotification } from '../lib/notificationStorage';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createIssue } from "../lib/issueStorage";
+import { addPermanentNotification } from "../lib/notificationStorage";
 
 interface ReportIssueDialogProps {
   bookingReference?: string;
@@ -44,27 +44,29 @@ export default function ReportIssueDialog({
   trigger,
 }: ReportIssueDialogProps) {
   const [open, setOpen] = useState(false);
-  const [category, setCategory] = useState<'booking' | 'payment' | 'property' | 'service' | 'other'>('booking');
-  const [description, setDescription] = useState('');
-  const [contactName, setContactName] = useState(initialName || '');
-  const [contactPhone, setContactPhone] = useState(initialPhone || '');
+  const [category, setCategory] = useState<
+    "booking" | "payment" | "property" | "service" | "other"
+  >("booking");
+  const [description, setDescription] = useState("");
+  const [contactName, setContactName] = useState(initialName || "");
+  const [contactPhone, setContactPhone] = useState(initialPhone || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!description.trim()) {
-      toast.error('Please describe the issue');
+      toast.error("Please describe the issue");
       return;
     }
 
     if (!contactName.trim() || !contactPhone.trim()) {
-      toast.error('Please provide your contact information');
+      toast.error("Please provide your contact information");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const issue = createIssue({
+      const _issue = createIssue({
         bookingReference,
         category,
         description: description.trim(),
@@ -76,18 +78,20 @@ export default function ReportIssueDialog({
       });
 
       // Create notification
-      const notificationMessage = `New issue reported: ${category} - ${contactName} (${contactPhone})${bookingReference ? ` - Booking: ${bookingReference}` : ''}`;
-      addPermanentNotification(notificationMessage, 'issues', 'issue');
+      const notificationMessage = `New issue reported: ${category} - ${contactName} (${contactPhone})${bookingReference ? ` - Booking: ${bookingReference}` : ""}`;
+      addPermanentNotification(notificationMessage, "issues", "issue");
 
-      toast.success('Issue reported successfully. Admin will review it shortly.');
-      
+      toast.success(
+        "Issue reported successfully. Admin will review it shortly.",
+      );
+
       // Reset form
-      setDescription('');
-      setCategory('booking');
+      setDescription("");
+      setCategory("booking");
       setOpen(false);
     } catch (error) {
-      console.error('Error reporting issue:', error);
-      toast.error('Failed to report issue. Please try again.');
+      console.error("Error reporting issue:", error);
+      toast.error("Failed to report issue. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -110,21 +114,29 @@ export default function ReportIssueDialog({
             Report an Issue
           </DialogTitle>
           <DialogDescription>
-            Describe the issue you're experiencing. Our team will review and respond as soon as possible.
+            Describe the issue you're experiencing. Our team will review and
+            respond as soon as possible.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {bookingReference && (
             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <p className="text-sm font-medium text-primary">Booking Reference: {bookingReference}</p>
+              <p className="text-sm font-medium text-primary">
+                Booking Reference: {bookingReference}
+              </p>
               {homeStayName && (
-                <p className="text-xs text-muted-foreground mt-1">{homeStayName}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {homeStayName}
+                </p>
               )}
             </div>
           )}
           <div className="space-y-2">
             <Label htmlFor="category">Issue Category</Label>
-            <Select value={category} onValueChange={(value: any) => setCategory(value)}>
+            <Select
+              value={category}
+              onValueChange={(value: any) => setCategory(value)}
+            >
               <SelectTrigger id="category">
                 <SelectValue />
               </SelectTrigger>
@@ -170,7 +182,11 @@ export default function ReportIssueDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button
@@ -178,7 +194,7 @@ export default function ReportIssueDialog({
             disabled={isSubmitting}
             className="gradient-saffron-gold text-white"
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Issue'}
+            {isSubmitting ? "Submitting..." : "Submit Issue"}
           </Button>
         </DialogFooter>
       </DialogContent>

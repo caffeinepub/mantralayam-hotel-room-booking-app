@@ -1,16 +1,16 @@
-import { Booking } from './dataStorage';
+import type { Booking } from "./dataStorage";
 
 export function generateInvoiceHTML(booking: Booking): string {
-  const checkInDate = new Date(booking.checkInDate).toLocaleString('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  const checkInDate = new Date(booking.checkInDate).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
   });
-  const checkOutDate = new Date(booking.checkOutDate).toLocaleString('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  const checkOutDate = new Date(booking.checkOutDate).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
   });
-  const bookingDate = new Date(booking.bookingDate).toLocaleString('en-IN', {
-    dateStyle: 'medium',
+  const bookingDate = new Date(booking.bookingDate).toLocaleString("en-IN", {
+    dateStyle: "medium",
   });
 
   return `
@@ -207,7 +207,7 @@ export function generateInvoiceHTML(booking: Booking): string {
         <div class="section-title">Payment Summary</div>
         <div class="info-row">
           <span class="info-label">Payment Method:</span>
-          <span class="info-value">${booking.paymentMethod?.toUpperCase() || 'UPI'}</span>
+          <span class="info-value">${booking.paymentMethod?.toUpperCase() || "UPI"}</span>
         </div>
         <div class="total-row">
           <span>Total Amount Paid:</span>
@@ -227,12 +227,12 @@ export function generateInvoiceHTML(booking: Booking): string {
 
 export function printInvoice(booking: Booking): void {
   const invoiceHTML = generateInvoiceHTML(booking);
-  const printWindow = window.open('', '_blank');
-  
+  const printWindow = window.open("", "_blank");
+
   if (printWindow) {
     printWindow.document.write(invoiceHTML);
     printWindow.document.close();
   } else {
-    console.error('Failed to open print window');
+    console.error("Failed to open print window");
   }
 }

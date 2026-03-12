@@ -1,7 +1,7 @@
 import Map "mo:core/Map";
 import Array "mo:core/Array";
-import Time "mo:core/Time";
 import Iter "mo:core/Iter";
+import Time "mo:core/Time";
 import Principal "mo:core/Principal";
 import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
@@ -10,8 +10,6 @@ import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import OutCall "http-outcalls/outcall";
 import Stripe "stripe/stripe";
-
-
 
 actor {
   include MixinStorage();
@@ -96,6 +94,7 @@ actor {
     contact : Text;
     rooms : [Text];
     registrationDate : Time.Time;
+    password : Text;
   };
 
   public type Notification = {
@@ -112,14 +111,9 @@ actor {
     unread : Bool;
   };
 
-  public type UserProfile = {
-    name : Text;
-  };
+  public type UserProfile = { name : Text };
 
-  public type RoomPasscodeConfig = {
-    roomId : Text;
-    passcode : Text;
-  };
+  public type RoomPasscodeConfig = { roomId : Text; passcode : Text };
 
   public type PartnerRoomUpdate = {
     roomId : Text;
@@ -127,10 +121,19 @@ actor {
     availability : Bool;
   };
 
+  public type TempleSpecial = {
+    id : Text;
+    name : Text;
+    description : Text;
+    price : Nat;
+    date : Text;
+    image : Storage.ExternalBlob;
+  };
+
   let hotels = Map.empty<Text, Hotel>();
   let homeStays = Map.empty<Text, HomeStay>();
   let guestProfiles = Map.empty<Text, GuestProfile>();
-  var bookings = Map.empty<Text, Booking>();
+  let bookings = Map.empty<Text, Booking>();
   let adminProfiles = Map.empty<Text, AdminProfile>();
   let partnerProfiles = Map.empty<Text, PartnerProfile>();
   let notifications = Map.empty<Text, Notification>();
@@ -139,6 +142,7 @@ actor {
   let partnerSessions = Map.empty<Principal, Bool>();
   let partnerPrincipalToId = Map.empty<Principal, Text>();
   let customerFirstLoginTracking = Map.empty<Principal, Bool>();
+  let templeSpecials = Map.empty<Text, TempleSpecial>();
 
   let accessControlState = AccessControl.initState();
   let roomPasscodes = Map.empty<Text, Text>();
@@ -151,36 +155,11 @@ actor {
   };
 
   func isAuthenticatedPartner(caller : Principal) : Bool {
-    switch (partnerSessions.get(caller)) {
-      case (?true) {
-        switch (partnerAuthenticatedRooms.get(caller)) {
-          case (?_) { true };
-          case (null) { false };
-        };
-      };
-      case (_) { false };
-    };
+    partnerSessions.get(caller) == ?true;
   };
 
   func getPartnerIdForCaller(caller : Principal) : ?Text {
     partnerPrincipalToId.get(caller);
-  };
-
-  func getPartnerAuthenticatedRoom(caller : Principal) : ?Text {
-    partnerAuthenticatedRooms.get(caller);
-  };
-
-  func validatePartnerRoomAccess(caller : Principal, roomId : Text) {
-    switch (getPartnerAuthenticatedRoom(caller)) {
-      case (?authenticatedRoomId) {
-        if (authenticatedRoomId != roomId) {
-          Runtime.trap("Unauthorized: Partner can only access their authenticated room");
-        };
-      };
-      case (null) {
-        Runtime.trap("Unauthorized: No authenticated room for partner");
-      };
-    };
   };
 
   func validatePartnerOwnsRoom(partnerId : Text, roomId : Text) {
@@ -228,6 +207,9 @@ actor {
   };
 
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can create checkout sessions");
+    };
     await Stripe.createCheckoutSession(getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
   };
 
@@ -290,13 +272,12 @@ actor {
   };
 
   // Check if customer has logged in before (for session-aware verification)
-  // FIXED: Only allow users to check their own login status
   public query ({ caller }) func hasCustomerLoggedInBefore() : async Bool {
     // Must be authenticated as user to check login status
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can check login status");
     };
-    
+
     // Users can only check their own login status
     switch (customerFirstLoginTracking.get(caller)) {
       case (?true) { true };
@@ -374,10 +355,10 @@ actor {
     hotels.values().toArray();
   };
 
-  // HomeStay Management - Admin only for add/update/delete
+  // HomeStay Management - Admin and User for add/update/delete
   public shared ({ caller }) func addHomeStayWithOptionalPasscode(homeStay : HomeStay, passcode : ?Text) : async () {
-    if (not isAuthenticatedAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only authenticated admins can add homestays");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can add homestays");
     };
 
     // Validate partner room setup
@@ -427,22 +408,22 @@ actor {
   };
 
   public shared ({ caller }) func updateHomeStay(homestay : HomeStay) : async () {
-    if (not isAuthenticatedAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only authenticated admins can update homestays");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can update homestays");
     };
     homeStays.add(homestay.id, homestay);
   };
 
   public shared ({ caller }) func deleteHomeStay(homestayId : Text) : async () {
-    if (not isAuthenticatedAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only authenticated admins can delete homestays");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can delete homestays");
     };
 
     switch (homeStays.get(homestayId)) {
-      case (?homestay) {
+      case (?homeStay) {
         // Remove room from partner profile if it's a partner room
-        if (homestay.ownerType == #partner) {
-          switch (homestay.partnerId) {
+        if (homeStay.ownerType == #partner) {
+          switch (homeStay.partnerId) {
             case (?partnerId) {
               switch (partnerProfiles.get(partnerId)) {
                 case (?partnerProfile) {
@@ -482,6 +463,18 @@ actor {
   // Public access - Anyone can view homestay details (for booking flow)
   public query func getHomeStayDetails(homeStayId : Text) : async ?HomeStay {
     homeStays.get(homeStayId);
+  };
+
+  // Temple Specials Management
+  public shared ({ caller }) func addTempleSpecial(special : TempleSpecial) : async () {
+    if (not isAuthenticatedAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only authenticated admins can add temple specials");
+    };
+    templeSpecials.add(special.id, special);
+  };
+
+  public query func getTempleSpecials() : async [TempleSpecial] {
+    templeSpecials.values().toArray();
   };
 
   // Bookings - Admin can view all, users can view their own
@@ -819,7 +812,7 @@ actor {
     notifications.add(notification.id, notification);
   };
 
-  // Partner (Landlord) Interface Functions with Passcode Authentication
+  // Partner (Landlord) Interface Functions with Password Authentication
   public shared ({ caller }) func registerPartnerProfile(profile : PartnerProfile) : async () {
     if (not isAuthenticatedAdmin(caller)) {
       Runtime.trap("Unauthorized: Only authenticated admins can register partner profiles");
@@ -828,72 +821,27 @@ actor {
     createNotification("New partner registered: " # profile.name, #partner);
   };
 
-  public shared ({ caller }) func authenticatePartnerWithPasscode(passcode : Text) : async Text {
-    // Validate passcode is not empty
-    if (passcode == "") {
-      Runtime.trap("Invalid passcode: Passcode cannot be empty");
+  // Admin-only: update a partner profile (including password changes)
+  // This is the function the admin uses to update partner credentials from the admin panel.
+  public shared ({ caller }) func adminUpdatePartnerProfile(profile : PartnerProfile) : async () {
+    if (not isAuthenticatedAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only authenticated admins can update partner profiles");
     };
-
-    switch (roomPasscodes.get(passcode)) {
-      case (?roomId) {
-        switch (homeStays.get(roomId)) {
-          case (?homeStay) {
-            if (homeStay.ownerType != #partner) {
-              Runtime.trap("Invalid passcode: Room is not a partner room");
-            };
-
-            switch (homeStay.partnerId) {
-              case (?partnerId) {
-                // Verify partner profile exists
-                switch (partnerProfiles.get(partnerId)) {
-                  case (?partnerProfile) {
-                    // Verify room is in partner's room list
-                    let ownsRoom = partnerProfile.rooms.find(func(r) { r == roomId });
-                    switch (ownsRoom) {
-                      case (?_) {
-                        // Authentication successful
-                        partnerSessions.add(caller, true);
-                        partnerAuthenticatedRooms.add(caller, roomId);
-                        partnerPrincipalToId.add(caller, partnerId);
-
-                        createPartnerNotification(partnerId, "Partner authenticated for room: " # roomId);
-                        roomId;
-                      };
-                      case (null) {
-                        Runtime.trap("Invalid passcode: Room not assigned to this partner");
-                      };
-                    };
-                  };
-                  case (null) {
-                    Runtime.trap("Invalid passcode: Partner profile not found");
-                  };
-                };
-              };
-              case (null) {
-                Runtime.trap("Invalid passcode: Room has no partner assigned");
-              };
-            };
-          };
-          case (null) {
-            Runtime.trap("Invalid passcode: Room not found");
-          };
+    switch (partnerProfiles.get(profile.id)) {
+      case (?existingProfile) {
+        // Preserve the rooms list from the existing profile so admin cannot accidentally clear it
+        let updatedProfile = {
+          profile with
+          rooms = existingProfile.rooms;
+          registrationDate = existingProfile.registrationDate;
         };
+        partnerProfiles.add(profile.id, updatedProfile);
+        createNotification("Partner profile updated by admin: " # profile.name, #partner);
       };
       case (null) {
-        Runtime.trap("Invalid passcode");
+        Runtime.trap("Partner profile not found");
       };
     };
-  };
-
-  public query ({ caller }) func checkPartnerAuthentication() : async Bool {
-    isAuthenticatedPartner(caller);
-  };
-
-  public query ({ caller }) func getPartnerAuthenticatedRoomId() : async ?Text {
-    if (not isAuthenticatedPartner(caller)) {
-      Runtime.trap("Unauthorized: Partner not authenticated");
-    };
-    getPartnerAuthenticatedRoom(caller);
   };
 
   public shared ({ caller }) func logoutPartner() : async () {
@@ -969,9 +917,6 @@ actor {
     if (not isAuthenticatedPartner(caller)) {
       Runtime.trap("Unauthorized: Only authenticated partners can update room details");
     };
-
-    // Validate partner can only update their authenticated room
-    validatePartnerRoomAccess(caller, update.roomId);
 
     switch (getPartnerIdForCaller(caller)) {
       case (?partnerId) {
@@ -1190,6 +1135,53 @@ actor {
       };
     };
     null;
+  };
+
+  // Partner Authentication with Password ONLY
+  // Looks up the latest persisted partner profile data from the canonical partnerProfiles map.
+  // This ensures that when an admin updates a partner's password via adminUpdatePartnerProfile,
+  // the new password is immediately effective for partner login.
+  public shared ({ caller }) func authenticatePartnerWithPassword(password : Text) : async Bool {
+    // Search partner profiles for a matching password (reads latest persisted data)
+    switch (findPartnerWithPassword(password)) {
+      case (?partnerId) {
+        onPartnerAuthenticated(caller, partnerId);
+        return true;
+      };
+      case (null) {};
+    };
+
+    // Password not found in any partner profile
+    Runtime.trap("Invalid password. Partner profile not found.");
+  };
+
+  func findPartnerWithPassword(password : Text) : ?Text {
+    var matchingId : ?Text = null;
+    for ((partnerId, partnerProfile) in partnerProfiles.entries()) {
+      if (partnerProfile.password == password) {
+        matchingId := ?partnerId;
+      };
+    };
+    matchingId;
+  };
+
+  func onPartnerAuthenticated(caller : Principal, partnerId : Text) {
+    partnerSessions.add(caller, true);
+    partnerPrincipalToId.add(caller, partnerId);
+    createPartnerNotification(partnerId, "Partner authenticated with password");
+  };
+
+  public query ({ caller }) func checkPartnerAuthentication() : async Bool {
+    isAuthenticatedPartner(caller);
+  };
+
+  // Returns the partner ID associated with the current authenticated partner session.
+  // Used by the frontend PartnerDashboardPage to resolve which homestay belongs to the logged-in partner.
+  public query ({ caller }) func getAuthenticatedPartnerId() : async ?Text {
+    if (not isAuthenticatedPartner(caller)) {
+      return null;
+    };
+    getPartnerIdForCaller(caller);
   };
 
   func createNotification(message : Text, notificationType : { #booking; #payment; #profileUpdate; #partner; #newLogin }) {
